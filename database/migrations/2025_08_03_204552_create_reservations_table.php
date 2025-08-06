@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('reservations', function (Blueprint $table) {
             $table->id('reservation_id');
             $table->string('reservation_code')->unique();
-            $table->foreignId('user_id')->constrained('users', 'user_id');
+            $table->foreignId('user_id')->constrained('users', 'id');
             $table->foreignId('event_id')->constrained('events', 'event_id');
             $table->enum('reservation_status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');
             $table->decimal('total_amount', 10, 2);

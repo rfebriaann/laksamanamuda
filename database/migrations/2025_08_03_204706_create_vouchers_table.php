@@ -22,7 +22,7 @@ return new class extends Migration
             $table->integer('max_usage')->nullable();
             $table->integer('current_usage')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->foreignId('created_by')->constrained('users', 'user_id');
+            $table->foreignId('created_by')->constrained('users', 'id');
             $table->timestamps();
         });
     }

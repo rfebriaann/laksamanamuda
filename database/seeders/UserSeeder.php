@@ -51,7 +51,7 @@ class UserSeeder extends Seeder
 
             // Create membership for each member
             Membership::create([
-                'user_id' => $member->user_id,
+                'user_id' => $member->id,
                 'membership_number' => 'LM' . str_pad($i, 6, '0', STR_PAD_LEFT),
                 'total_points' => rand(100, 1000),
                 'joined_at' => now()->subDays(rand(1, 30)),

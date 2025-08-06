@@ -6,6 +6,7 @@ use App\Models\Event;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 
 class EventManagement extends Component
 {
@@ -36,12 +37,25 @@ class EventManagement extends Component
         'event_image' => 'nullable|image|max:2048',
     ];
 
+    protected $messages = [
+        'event_name.required' => 'Nama event harus diisi.',
+        'venue_name.required' => 'Nama venue harus diisi.',
+        'venue_address.required' => 'Alamat venue harus diisi.',
+        'event_date.required' => 'Tanggal event harus diisi.',
+        'event_date.after' => 'Tanggal event harus setelah hari ini.',
+        'start_time.required' => 'Waktu mulai harus diisi.',
+        'end_time.required' => 'Waktu selesai harus diisi.',
+        'end_time.after' => 'Waktu selesai harus setelah waktu mulai.',
+        'event_image.image' => 'File harus berupa gambar.',
+        'event_image.max' => 'Ukuran gambar maksimal 2MB.',
+    ];
+
     public function mount()
     {
         // Memastikan pengguna memiliki peran yang sesuai
-        if (!auth()->user()->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!auth()->user() || !auth()->user()->hasRole('admin')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
     }
 
     public function render()
@@ -57,11 +71,11 @@ class EventManagement extends Component
     public function createEvent()
     {
         // Memastikan pengguna memiliki izin untuk membuat event
-        if (!auth()->user()->hasRole('admin') && !auth()->user()->hasRole('superadmin')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!auth()->user()->hasRole('admin') && !auth()->user()->hasRole('superadmin')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
-        // $this->resetForm();
+        $this->resetForm();
         $this->showModal = true;
     }
 
@@ -70,9 +84,9 @@ class EventManagement extends Component
         $event = Event::findOrFail($eventId);
         
         // Memastikan pengguna memiliki izin untuk mengedit event
-        if (!auth()->user()->can('update events')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!auth()->user()->can('update events')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
         $this->editingEventId = $eventId;
         $this->event_name = $event->event_name;
@@ -88,6 +102,11 @@ class EventManagement extends Component
 
     public function saveEvent()
     {
+        // Update validation rules for editing
+        if ($this->editingEventId) {
+            $this->rules['event_date'] = 'required|date'; // Remove 'after:today' for editing
+        }
+
         $this->validate();
 
         $eventData = [
@@ -98,7 +117,6 @@ class EventManagement extends Component
             'event_date' => $this->event_date,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
-            'created_by' => auth()->id(),
         ];
 
         if ($this->event_image) {
@@ -107,13 +125,21 @@ class EventManagement extends Component
 
         if ($this->editingEventId) {
             $event = Event::findOrFail($this->editingEventId);
+            
+            // Delete old image if new image is uploaded
+            if ($this->event_image && $event->event_image) {
+                Storage::disk('public')->delete($event->event_image);
+            }
+            
             $event->update($eventData);
             session()->flash('message', 'Event berhasil diperbarui!');
         } else {
             // Memastikan pengguna memiliki izin untuk membuat event
-            if (!auth()->user()->can('create events')) {
-                abort(403, 'Unauthorized action.');
-            }
+            // if (!auth()->user()->can('create events')) {
+            //     abort(403, 'Unauthorized action.');
+            // }
+            
+            $eventData['created_by'] = auth()->id();
             Event::create($eventData);
             session()->flash('message', 'Event berhasil dibuat!');
         }
@@ -126,9 +152,9 @@ class EventManagement extends Component
         $event = Event::findOrFail($eventId);
         
         // Memastikan pengguna memiliki izin untuk menghapus event
-        if (!auth()->user()->can('delete events')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!auth()->user()->can('delete events')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
         $this->eventToDelete = $eventId;
         $this->confirmingEventDeletion = true;
@@ -138,6 +164,12 @@ class EventManagement extends Component
     {
         if ($this->eventToDelete) {
             $event = Event::findOrFail($this->eventToDelete);
+            
+            // Delete event image if exists
+            if ($event->event_image) {
+                Storage::disk('public')->delete($event->event_image);
+            }
+            
             $event->delete();
             session()->flash('message', 'Event berhasil dihapus!');
         }

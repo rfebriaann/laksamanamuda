@@ -1,12 +1,13 @@
 <?php
 
+use App\Livewire\Admin\SeatLayoutManager;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\Logout;
 
 Route::get('/', function () {
     return view('welcome');
 });
-
+// Route::get('/', App\Livewire\Admin\EventManagement::class)->name('event.management.index');
 Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['auth', 'verified', 'role:admin|superadmin'])->group(function () {
@@ -18,6 +19,9 @@ Route::middleware(['auth'])->group(function () {
         // Route::get('/ticket/create', App\Livewire\App\Ticket\Create::class)->name('ticket.create');
         // Route::get('ticket/{id}', App\Livewire\App\Ticket\Edit::class)->name('ticket.edit');
         Route::get('/event', App\Livewire\Admin\EventManagement::class)->name('event.management');
+        Route::get('/event/{event}/seat-layout', App\Livewire\Admin\SeatLayoutManager::class)->name('events.seat-layout');
+        Route::get('event/{event}/seat-layout/{layout}/preview', [SeatLayoutManager::class, 'previewLayout'])
+        ->name('event.seat-layout.preview');
         Route::get('/event/index', App\Livewire\Admin\Event\Index::class)->name('event.index');
         Route::get('/event/create', App\Livewire\Admin\Event\Create::class)->name('event.create');
         Route::get('/event/edit/{id}', App\Livewire\Admin\Event\Edit::class)->name('event.edit');

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Event extends Model
 {
     use HasFactory;
 
+    // Update primary key to match your existing structure
     protected $primaryKey = 'event_id';
 
     protected $fillable = [
@@ -20,59 +23,76 @@ class Event extends Model
         'start_time',
         'end_time',
         'event_image',
-        'is_active',
         'created_by',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'event_date' => 'date',
+        'start_time' => 'datetime:H:i',
+        'end_time' => 'datetime:H:i',
+    ];
+
+    /**
+     * Get the user who created this event.
+     */
+    public function creator(): BelongsTo
     {
-        return [
-            'event_date' => 'date',
-            'start_time' => 'datetime:H:i',
-            'end_time' => 'datetime:H:i',
-            'is_active' => 'boolean',
-        ];
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Relationships
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by', 'user_id');
-    }
-
-    public function seatLayouts()
+    /**
+     * Get all seat layouts for this event.
+     */
+    public function seatLayouts(): HasMany
     {
         return $this->hasMany(SeatLayout::class, 'event_id', 'event_id');
     }
 
-    public function reservations()
+    /**
+     * Scope for upcoming events
+     */
+    public function scopeUpcoming($query)
     {
-        return $this->hasMany(Reservation::class, 'event_id', 'event_id');
+        return $query->where('event_date', '>=', now()->format('Y-m-d'));
     }
 
-    // Helper methods
-    public function getAvailableSeats()
+    /**
+     * Scope for past events
+     */
+    public function scopePast($query)
     {
-        return $this->seatLayouts()
-            ->with(['seats' => function ($query) {
-                $query->where('is_available', true);
-            }])
-            ->get()
-            ->pluck('seats')
-            ->flatten();
+        return $query->where('event_date', '<', now()->format('Y-m-d'));
     }
 
-    public function getTotalSeats()
+    /**
+     * Check if event is upcoming
+     */
+    public function getIsUpcomingAttribute(): bool
     {
-        return $this->seatLayouts()->withCount('seats')->get()->sum('seats_count');
+        return $this->event_date->isFuture();
     }
 
-    public function getBookedSeats()
+    /**
+     * Check if event is today
+     */
+    public function getIsTodayAttribute(): bool
     {
-        return $this->reservations()
-            ->where('reservation_status', 'confirmed')
-            ->withCount('reservationSeats')
-            ->get()
-            ->sum('reservation_seats_count');
+        return $this->event_date->isToday();
+    }
+
+    /**
+     * Check if event is past
+     */
+    public function getIsPastAttribute(): bool
+    {
+        return $this->event_date->isPast();
+    }
+
+    /**
+     * Get route key name for model binding
+     */
+    public function getRouteKeyName()
+    {
+        return 'event_id';
     }
 }

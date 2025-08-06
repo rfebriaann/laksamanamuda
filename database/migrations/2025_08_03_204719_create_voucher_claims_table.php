@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('voucher_claims', function (Blueprint $table) {
             $table->id('claim_id');
             $table->foreignId('voucher_id')->constrained('vouchers', 'voucher_id');
-            $table->foreignId('user_id')->constrained('users', 'user_id');
+            $table->foreignId('user_id')->constrained('users', 'id');
             $table->foreignId('membership_id')->nullable()->constrained('memberships', 'membership_id');
             $table->enum('claim_status', ['active', 'used', 'expired'])->default('active');
             $table->timestamp('claimed_at');

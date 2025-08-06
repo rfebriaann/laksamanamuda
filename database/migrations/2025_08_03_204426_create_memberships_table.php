@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('memberships', function (Blueprint $table) {
             $table->id('membership_id');
-            $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->string('membership_number')->unique();
             $table->integer('total_points')->default(0);
             $table->timestamp('joined_at');

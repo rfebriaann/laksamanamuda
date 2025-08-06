@@ -29,9 +29,9 @@ class Index extends Component
         $event = Event::findOrFail($eventId);
         
         // Memastikan pengguna memiliki izin untuk menghapus event
-        if (!auth()->user()->can('delete events')) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!auth()->user()->can('delete events')) {
+        //     abort(403, 'Unauthorized action.');
+        // }
 
         $this->eventToDelete = $eventId;
         $this->confirmingEventDeletion = true;

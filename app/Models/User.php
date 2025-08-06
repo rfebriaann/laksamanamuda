@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles;
 
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'id';
     
     protected $fillable = [
         'email',
@@ -36,30 +36,36 @@ class User extends Authenticatable
         ];
     }
 
+    public function getRouteKeyName()
+    {
+        return 'user_id';
+    }
+
+    // Relationships
+    public function createdEvents()
+    {
+        return $this->hasMany(Event::class, 'created_by', 'id');
+    }
+
     // Relationships
     public function membership()
     {
-        return $this->hasOne(Membership::class, 'user_id', 'user_id');
+        return $this->hasOne(Membership::class, 'user_id', 'id');
     }
 
     public function reservations()
     {
-        return $this->hasMany(Reservation::class, 'user_id', 'user_id');
-    }
-
-    public function createdEvents()
-    {
-        return $this->hasMany(Event::class, 'created_by', 'user_id');
+        return $this->hasMany(Reservation::class, 'user_id', 'id');
     }
 
     public function createdVouchers()
     {
-        return $this->hasMany(Voucher::class, 'created_by', 'user_id');
+        return $this->hasMany(Voucher::class, 'created_by', 'id');
     }
 
     public function voucherClaims()
     {
-        return $this->hasMany(VoucherClaim::class, 'user_id', 'user_id');
+        return $this->hasMany(VoucherClaim::class, 'user_id', 'id');
     }
 
     // Scopes

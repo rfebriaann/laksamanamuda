@@ -18,7 +18,7 @@ class Login extends Component
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
-
+        // dd(Auth::attempt($credentials, $this->remember));
         if (Auth::attempt($credentials, $this->remember)) {
             session()->regenerate();
             return redirect()->intended('/');
