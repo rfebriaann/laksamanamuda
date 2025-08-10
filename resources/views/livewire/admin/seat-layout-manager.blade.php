@@ -1,5 +1,292 @@
 @push('styles')
 <style>
+/* Seat and Table Element Styles */
+.seat-element, .table-element {
+    position: absolute;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: move;
+    user-select: none;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.seat-element:hover, .table-element:hover {
+    border-color: #007cba;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.seat-element.selected, .table-element.selected {
+    border-color: #007cba;
+    background-color: rgba(0, 124, 186, 0.1);
+    box-shadow: 0 0 0 3px rgba(0, 124, 186, 0.3);
+}
+
+.seat-element.dragging, .table-element.dragging {
+    opacity: 0.8;
+    transform: rotate(2deg);
+    z-index: 1000;
+}
+
+/* Seat Types */
+.seat-element.regular {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.seat-element.vip {
+    background-color: #f59e0b;
+    color: white;
+}
+
+/* Table Shapes */
+.table-element {
+    background-color: #8b5cf6;
+    color: white;
+}
+
+.table-element.shape-circle {
+    border-radius: 50%;
+}
+
+.table-element.shape-diamond {
+    transform-origin: center;
+}
+
+/* Preview Canvas Styles */
+.preview-canvas {
+    position: relative;
+    background-color: #f8fafc;
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 200px;
+}
+
+.preview-element {
+    position: absolute;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: bold;
+    color: white;
+}
+
+.preview-seat.regular {
+    background-color: #3b82f6;
+}
+
+.preview-seat.vip {
+    background-color: #f59e0b;
+}
+
+.preview-table {
+    background-color: #8b5cf6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-table.shape-circle {
+    border-radius: 50%;
+}
+
+.preview-table.shape-diamond {
+    transform: rotate(45deg);
+}
+
+.preview-table-content {
+    transform: rotate(-45deg);
+    text-align: center;
+}
+
+/* Stage styles */
+.stage-preview {
+    background-color: #374151;
+    color: white;
+    text-align: center;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Layout Card Hover Effects */
+.layout-card {
+    transition: all 0.3s ease;
+}
+
+.layout-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+/* Action Button Styles */
+.action-btn {
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.action-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Canvas Tool Cursors */
+.tool-select { cursor: default; }
+.tool-regular { cursor: crosshair; }
+.tool-vip { cursor: crosshair; }
+.tool-table { cursor: crosshair; }
+.tool-delete { cursor: not-allowed; }
+
+/* Tool Button Styles */
+.tool-btn.active {
+    background-color: #007cba;
+    color: white;
+    border-color: #007cba;
+}
+
+/* Canvas */
+#seat-canvas {
+    position: relative;
+    background-color: #f8fafc;
+    border: 2px dashed #e2e8f0;
+    min-height: 600px;
+    overflow: hidden;
+}
+
+/* Background Image */
+#background-image-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+#background-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Elements Container */
+#elements-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    z-index: 1;
+}
+
+/* Statistics Panel */
+#statistics {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+}
+
+/* Mode Toggle */
+#mode-toggle button.active {
+    background-color: #007cba;
+    color: white;
+    border-color: #007cba;
+}
+
+/* Table Shape Buttons */
+.table-shape-btn.active {
+    background-color: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
+}
+
+/* Animation for new elements */
+@keyframes elementCreated {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.seat-element, .table-element {
+    animation: elementCreated 0.3s ease-out;
+}
+
+/* Resize Handles */
+.resize-handles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.resize-handle {
+    position: absolute;
+    background-color: #007cba;
+    border: 1px solid white;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: all;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.seat-element:hover .resize-handle,
+.table-element:hover .resize-handle,
+.seat-element.selected .resize-handle,
+.table-element.selected .resize-handle {
+    opacity: 1;
+}
+
+/* Resize Handle Positions */
+.resize-handle.nw { top: -4px; left: -4px; cursor: nw-resize; }
+.resize-handle.ne { top: -4px; right: -4px; cursor: ne-resize; }
+.resize-handle.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
+.resize-handle.se { bottom: -4px; right: -4px; cursor: se-resize; }
+.resize-handle.n { top: -4px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.resize-handle.s { bottom: -4px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+.resize-handle.w { top: 50%; left: -4px; transform: translateY(-50%); cursor: w-resize; }
+.resize-handle.e { top: 50%; right: -4px; transform: translateY(-50%); cursor: e-resize; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .resize-handle {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .seat-element, .table-element {
+        font-size: 11px;
+    }
+    
+    .preview-canvas {
+        min-height: 150px;
+    }
+}
+</style>
+<style>
     .tool-btn.active {
         @apply border-2 border-indigo-500 bg-indigo-50;
     }
@@ -387,7 +674,7 @@
                             </svg>
                         </a>
                         <span class="text-gray-400">/</span>
-                        <span class="text-sm text-gray-600">Interactive Seat Layout Manager</span>
+                        <span class="text-sm text-gray-600">Enhanced Seat Layout Manager</span>
                     </div>
                     <h1 class="text-3xl font-bold text-gray-900">Kelola Layout Kursi</h1>
                     <p class="mt-2 text-sm text-gray-700">
@@ -405,30 +692,298 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Flash Messages -->
+            @if (session()->has('message'))
+                <div class="mb-6 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        {{ session('message') }}
+                    </div>
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        {{ session('error') }}
+                    </div>
+                </div>
+            @endif
         </div>
 
-        <!-- Flash Messages -->
-        @if (session()->has('message'))
-            <div class="mb-6 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md">
-                <div class="flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    {{ session('message') }}
-                </div>
-            </div>
-        @endif
+        <!-- Seat Layouts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            @forelse($seatLayouts as $layout)
+                <div class="layout-card bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200">
+                    <!-- Layout Header -->
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ $layout['layout_name'] }}</h3>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    @php
+                                        $config = $layout['layout_config'];
+                                        $sellingMode = $config['selling_mode'] ?? 'per_seat';
+                                    @endphp
+                                    
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                        {{ $sellingMode === 'per_table' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
+                                        {{ $sellingMode === 'per_table' ? 'Per Meja' : 'Per Kursi' }}
+                                    </span>
+                                    
+                                    @if($sellingMode === 'per_table')
+                                        <span class="text-sm text-gray-500">
+                                            {{ count($config['tables'] ?? []) }} meja
+                                        </span>
+                                    @else
+                                        <span class="text-sm text-gray-500">
+                                            {{ count($config['custom_seats'] ?? []) }} kursi
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button wire:click="editLayout({{ $layout['layout_id'] }})" 
+                                        class="action-btn text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+                                        title="Edit Layout">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button wire:click="deleteLayout({{ $layout['layout_id'] }})" 
+                                        wire:confirm="Apakah Anda yakin ingin menghapus layout ini?"
+                                        class="action-btn text-red-600 hover:text-red-800 transition-colors duration-200"
+                                        title="Hapus Layout">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-        @if (session()->has('error'))
-            <div class="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-                <div class="flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                    {{ session('error') }}
+                    <!-- Layout Preview -->
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-2">Layout Preview</h4>
+                            
+                            <!-- Stage -->
+                            <div class="stage-preview">
+                                🎭 PANGGUNG
+                            </div>
+                            
+                            <!-- Preview Canvas -->
+                            <div class="preview-canvas">
+                                @if($sellingMode === 'per_table')
+                                    <!-- Table Mode Preview -->
+                                    @php
+                                        $tables = $config['tables'] ?? [];
+                                        $maxX = 0;
+                                        $maxY = 0;
+                                        $minX = PHP_INT_MAX;
+                                        $minY = PHP_INT_MAX;
+                                        
+                                        foreach ($tables as $table) {
+                                            $maxX = max($maxX, ($table['x'] ?? 0) + ($table['width'] ?? 120));
+                                            $maxY = max($maxY, ($table['y'] ?? 0) + ($table['height'] ?? 120));
+                                            $minX = min($minX, $table['x'] ?? 0);
+                                            $minY = min($minY, $table['y'] ?? 0);
+                                        }
+                                        
+                                        $scaleX = count($tables) > 0 ? 280 / max(1, $maxX - $minX) : 1;
+                                        $scaleY = count($tables) > 0 ? 160 / max(1, $maxY - $minY) : 1;
+                                        $scale = min($scaleX, $scaleY, 1);
+                                    @endphp
+                                    
+                                    @foreach($tables as $table)
+                                        @php
+                                            $x = (($table['x'] ?? 0) - $minX) * $scale + 10;
+                                            $y = (($table['y'] ?? 0) - $minY) * $scale + 20;
+                                            $width = ($table['width'] ?? 120) * $scale;
+                                            $height = ($table['height'] ?? 120) * $scale;
+                                            $shape = $table['shape'] ?? 'square';
+                                            $capacity = $table['capacity'] ?? 4;
+                                            $number = $table['number'] ?? 'T' . ($loop->index + 1);
+                                        @endphp
+                                        
+                                        <div class="preview-element preview-table shape-{{ $shape }}"
+                                             style="left: {{ $x }}px; top: {{ $y }}px; width: {{ $width }}px; height: {{ $height }}px;">
+                                            @if($shape === 'diamond')
+                                                <div class="preview-table-content">
+                                                    <div style="font-size: 6px;">{{ $number }}</div>
+                                                    <div style="font-size: 4px;">{{ $capacity }}p</div>
+                                                </div>
+                                            @else
+                                                <div style="font-size: 6px;">{{ $number }}</div>
+                                                <div style="font-size: 4px;">{{ $capacity }}p</div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                    
+                                    @if(empty($tables))
+                                        <div class="flex items-center justify-center h-full text-gray-400 text-xs">
+                                            Belum ada meja
+                                        </div>
+                                    @endif
+                                @else
+                                    <!-- Seat Mode Preview -->
+                                    @php
+                                        $customSeats = $config['custom_seats'] ?? [];
+                                        $vipCount = collect($customSeats)->where('type', 'VIP')->count();
+                                        $regularCount = collect($customSeats)->where('type', 'Regular')->count();
+                                        
+                                        $maxX = 0;
+                                        $maxY = 0;
+                                        $minX = PHP_INT_MAX;
+                                        $minY = PHP_INT_MAX;
+                                        
+                                        foreach ($customSeats as $seat) {
+                                            $maxX = max($maxX, ($seat['x'] ?? 0) + ($seat['width'] ?? 44));
+                                            $maxY = max($maxY, ($seat['y'] ?? 0) + ($seat['height'] ?? 44));
+                                            $minX = min($minX, $seat['x'] ?? 0);
+                                            $minY = min($minY, $seat['y'] ?? 0);
+                                        }
+                                        
+                                        $scaleX = count($customSeats) > 0 ? 280 / max(1, $maxX - $minX) : 1;
+                                        $scaleY = count($customSeats) > 0 ? 160 / max(1, $maxY - $minY) : 1;
+                                        $scale = min($scaleX, $scaleY, 1);
+                                    @endphp
+                                    
+                                    @foreach($customSeats as $seat)
+                                        @php
+                                            $x = (($seat['x'] ?? 0) - $minX) * $scale + 10;
+                                            $y = (($seat['y'] ?? 0) - $minY) * $scale + 20;
+                                            $width = ($seat['width'] ?? 44) * $scale;
+                                            $height = ($seat['height'] ?? 44) * $scale;
+                                            $type = strtolower($seat['type'] ?? 'regular');
+                                            $number = $seat['number'] ?? $seat['id'] ?? $loop->index + 1;
+                                        @endphp
+                                        
+                                        <div class="preview-element preview-seat {{ $type }}"
+                                             style="left: {{ $x }}px; top: {{ $y }}px; width: {{ $width }}px; height: {{ $height }}px;"
+                                             title="{{ ucfirst($type) }} - {{ $number }}">
+                                            {{ is_numeric($number) ? $number : substr($number, -2) }}
+                                        </div>
+                                    @endforeach
+                                    
+                                    @if(empty($customSeats))
+                                        <div class="flex items-center justify-center h-full text-gray-400 text-xs">
+                                            Belum ada kursi
+                                        </div>
+                                    @endif
+                                @endif
+                            </div>
+
+                            <!-- Legend -->
+                            <div class="flex justify-center space-x-4 mt-3 text-xs">
+                                @if($sellingMode === 'per_table')
+                                    @php
+                                        $shapeCount = [];
+                                        foreach($config['tables'] ?? [] as $table) {
+                                            $shape = $table['shape'] ?? 'square';
+                                            $shapeCount[$shape] = ($shapeCount[$shape] ?? 0) + 1;
+                                        }
+                                    @endphp
+                                    
+                                    @foreach($shapeCount as $shape => $count)
+                                        <div class="flex items-center space-x-1">
+                                            <div class="w-3 h-3 bg-purple-500 
+                                                {{ $shape === 'circle' ? 'rounded-full' : ($shape === 'diamond' ? 'transform rotate-45' : 'rounded-sm') }}">
+                                            </div>
+                                            <span class="text-gray-600">{{ ucfirst($shape) }} ({{ $count }})</span>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="flex items-center space-x-1">
+                                        <div class="w-3 h-3 bg-blue-400 rounded-sm"></div>
+                                        <span class="text-gray-600">Regular ({{ $regularCount }})</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <div class="w-3 h-3 bg-yellow-400 rounded-sm"></div>
+                                        <span class="text-gray-600">VIP ({{ $vipCount }})</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Layout Info -->
+                        <div class="space-y-2 text-sm">
+                            @if($sellingMode === 'per_table')
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Total Meja:</span>
+                                    <span class="font-medium">{{ count($config['tables'] ?? []) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Total Kapasitas:</span>
+                                    <span class="font-medium">
+                                        {{ collect($config['tables'] ?? [])->sum('capacity') }} orang
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Harga per Meja:</span>
+                                    <span class="font-medium">Rp {{ number_format($config['table_price'] ?? 500000) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Est. Revenue:</span>
+                                    <span class="font-medium text-green-600">
+                                        Rp {{ number_format((count($config['tables'] ?? []) * ($config['table_price'] ?? 500000))) }}
+                                    </span>
+                                </div>
+                            @else
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Total Kursi:</span>
+                                    <span class="font-medium">{{ count($config['custom_seats'] ?? []) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Harga Regular:</span>
+                                    <span class="font-medium">Rp {{ number_format($config['regular_price'] ?? 150000) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Harga VIP:</span>
+                                    <span class="font-medium">Rp {{ number_format($config['vip_price'] ?? 300000) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Est. Revenue:</span>
+                                    <span class="font-medium text-green-600">
+                                        Rp {{ number_format(($regularCount * ($config['regular_price'] ?? 150000)) + ($vipCount * ($config['vip_price'] ?? 300000))) }}
+                                    </span>
+                                </div>
+                            @endif
+                            
+                            <div class="flex justify-between border-t pt-2">
+                                <span class="text-gray-500">Dibuat:</span>
+                                <span class="font-medium">{{ \Carbon\Carbon::parse($layout['created_at'])->format('d M Y') }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        @endif
+            @empty
+                <div class="col-span-full">
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada layout kursi</h3>
+                        <p class="mt-1 text-sm text-gray-500">Mulai dengan membuat layout kursi pertama untuk event ini.</p>
+                        <div class="mt-6">
+                            <button wire:click="createLayout" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Buat Layout Pertama
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endforelse
+        </div>
 
         <!-- Create/Edit Layout Modal -->
         @if($showLayoutModal)
@@ -497,8 +1052,6 @@
                                                 </span>
                                             </p>
                                         </div>
-
-                                        
 
                                         <!-- Table Shape Selector (only for per_table mode) -->
                                         <div id="table-shape-section" style="display: {{ $selling_mode === 'per_table' ? 'block' : 'none' }};">
@@ -592,49 +1145,16 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <!-- Layout Canvas -->
                                 <div class="flex-1 flex flex-col overflow-auto">
-                                    <div class="grid grid-cols-2 gap-2 mb-2">
-                                                        <button type="button" onclick="debugSeatManager()" 
-                                                                class="px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs hover:bg-yellow-300">
-                                                            🐛 Full Debug
-                                                        </button>
-                                                        <button type="button" onclick="checkSystemStatus()" 
-                                                                class="px-2 py-1 bg-blue-200 text-blue-800 rounded text-xs hover:bg-blue-300">
-                                                            📊 System Status
-                                                        </button>
-                                                        <button type="button" onclick="forceSyncData()" 
-                                                                class="px-2 py-1 bg-indigo-200 text-indigo-800 rounded text-xs hover:bg-indigo-300">
-                                                            🔄 Force Sync
-                                                        </button>
-                                                        <button type="button" onclick="testSaveLayout()" 
-                                                                class="px-2 py-1 bg-green-200 text-green-800 rounded text-xs hover:bg-green-300">
-                                                            🧪 Test Save
-                                                        </button>
-                                                        <button type="button" onclick="manualSaveLayout()" 
-                                                                class="px-2 py-1 bg-purple-200 text-purple-800 rounded text-xs hover:bg-purple-300">
-                                                            💾 Manual Save
-                                                        </button>
-                                                        <button type="button" onclick="testWithDummyData()" 
-                                                                class="px-2 py-1 bg-red-200 text-red-800 rounded text-xs hover:bg-red-300">
-                                                            🎲 Dummy Test
-                                                        </button>
-                                                    </div>
-                                    <div class="p-6 flex-1">
-                                        <div class="mb-4">
-                                            <h4 class="text-sm font-medium text-gray-900 mb-2">Layout Designer</h4>
-                                            <p class="text-xs text-gray-500 mb-4" id="canvas-instruction">
-                                                Pilih tool di sidebar, lalu klik di canvas untuk menambah elemen. Drag untuk memindahkan, resize dengan handle di pojok.
-                                            </p>
-                                        </div>
-                                        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
                                         <button type="button" 
                                                 wire:click="closeModal"
                                                 class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                                             Batal
                                         </button>
                                         <button type="submit" 
+                                                onclick="saveLayout()"
                                                 id="save-button"
                                                 class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
                                                 wire:loading.attr="disabled">
@@ -650,7 +1170,14 @@
                                             </span>
                                         </button>
                                     </div>
-                                    
+                                    <div class="p-6 flex-1">
+                                        <div class="mb-4">
+                                            <h4 class="text-sm font-medium text-gray-900 mb-2">Layout Designer</h4>
+                                            <p class="text-xs text-gray-500 mb-4" id="canvas-instruction">
+                                                Pilih tool di sidebar, lalu klik di canvas untuk menambah elemen. Drag untuk memindahkan, resize dengan handle di pojok.
+                                            </p>
+                                        </div>
+                                        
                                         <!-- Stage -->
                                         <div class="mb-6">
                                             <div class="bg-gray-800 text-white text-center py-4 px-6 rounded-lg text-sm font-medium max-w-md mx-auto">
@@ -714,44 +1241,6 @@
                                                 <div class="mt-3 p-2 bg-blue-50 rounded text-blue-800">
                                                     <strong>💡 Mode Per Meja:</strong> Tidak ada kursi individual. Customer langsung memesan meja dengan kapasitas tertentu.
                                                 </div>
-                                                
-                                                <!-- Debug Section (remove in production) -->
-                                                <div class="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                                                    <h6 class="font-semibold text-yellow-900 mb-2">🔧 Debug & Troubleshooting:</h6>
-                                                    {{-- <div class="grid grid-cols-2 gap-2 mb-2">
-                                                        <button type="button" onclick="debugSeatManager()" 
-                                                                class="px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs hover:bg-yellow-300">
-                                                            🐛 Full Debug
-                                                        </button>
-                                                        <button type="button" onclick="checkSystemStatus()" 
-                                                                class="px-2 py-1 bg-blue-200 text-blue-800 rounded text-xs hover:bg-blue-300">
-                                                            📊 System Status
-                                                        </button>
-                                                        <button type="button" onclick="forceSyncData()" 
-                                                                class="px-2 py-1 bg-indigo-200 text-indigo-800 rounded text-xs hover:bg-indigo-300">
-                                                            🔄 Force Sync
-                                                        </button>
-                                                        <button type="button" onclick="testSaveLayout()" 
-                                                                class="px-2 py-1 bg-green-200 text-green-800 rounded text-xs hover:bg-green-300">
-                                                            🧪 Test Save
-                                                        </button>
-                                                        <button type="button" onclick="manualSaveLayout()" 
-                                                                class="px-2 py-1 bg-purple-200 text-purple-800 rounded text-xs hover:bg-purple-300">
-                                                            💾 Manual Save
-                                                        </button>
-                                                        <button type="button" onclick="testWithDummyData()" 
-                                                                class="px-2 py-1 bg-red-200 text-red-800 rounded text-xs hover:bg-red-300">
-                                                            🎲 Dummy Test
-                                                        </button>
-                                                    </div> --}}
-                                                    <div class="text-xs text-yellow-700 bg-yellow-100 p-2 rounded">
-                                                        <strong>Troubleshooting:</strong><br>
-                                                        1. Jika layout tidak muncul → klik "System Status"<br>
-                                                        2. Jika tidak bisa save → klik "Full Debug" lalu "Force Sync"<br>
-                                                        3. Test basic functionality → "Test Save" atau "Dummy Test"<br>
-                                                        4. Manual save bypass → "Manual Save"
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -770,392 +1259,8 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 
-// Enhanced debug and test functions
-window.debugSeatManager = function() {
-    const debug = {
-        initialized: SeatLayoutManager.initialized,
-        canvasExists: !!document.getElementById('seat-canvas'),
-        containerExists: !!document.getElementById('elements-container'),
-        modalVisible: !!document.querySelector('[wire\\:key="layout-modal"]'),
-        livewireAvailable: !!(window.Livewire && window.Livewire.all && window.Livewire.all().length > 0),
-        currentData: {
-            mode: SeatLayoutManager.sellingMode,
-            seats: SeatLayoutManager.seats.length,
-            tables: SeatLayoutManager.tables.length
-        },
-        domElements: {
-            modeToggle: !!document.getElementById('mode-toggle'),
-            toolsContainer: !!document.getElementById('tools-container'),
-            quickActions: !!document.getElementById('quick-actions'),
-            statistics: !!document.getElementById('statistics'),
-            pricingSection: !!document.getElementById('pricing-section')
-        }
-    };
-    
-    console.log('🐛 DEBUG INFO:', debug);
-    
-    // Also try to find Livewire component
-    if (window.Livewire) {
-        try {
-            const wireId = document.querySelector('[wire\\:id]')?.getAttribute('wire:id');
-            console.log('🔌 Livewire Wire ID:', wireId);
-            
-            if (typeof @this !== 'undefined') {
-                console.log('🎯 @this available:', typeof @this);
-            }
-        } catch (e) {
-            console.log('⚠️ Livewire component check failed:', e);
-        }
-    }
-    
-    return debug;
-};
-
-// Test sync with different methods
-window.testSyncMethods = function() {
-    console.log('🧪 Testing sync methods...');
-    
-    if (!window.SeatLayoutManager) {
-        console.error('❌ SeatLayoutManager not available');
-        return;
-    }
-    
-    // Create test data first
-    SeatLayoutManager.clearAll();
-    if (SeatLayoutManager.sellingMode === 'per_table') {
-        SeatLayoutManager.createTable(100, 100, 'square');
-        SeatLayoutManager.createTable(250, 100, 'circle');
-    } else {
-        SeatLayoutManager.createSeat('Regular', 100, 100);
-        SeatLayoutManager.createSeat('VIP', 150, 100);
-    }
-    
-    // Test sync
-    const syncResult = SeatLayoutManager.syncWithLivewire();
-    console.log('🔄 Sync result:', syncResult);
-    
-    if (syncResult) {
-        console.log('✅ Sync successful!');
-        // Test saving
-        setTimeout(() => {
-            if (window.Livewire && typeof @this !== 'undefined') {
-                try {
-                    @this.call('saveLayout').then(() => {
-                        console.log('💾 Save test completed');
-                    });
-                } catch (e) {
-                    console.log('⚠️ Save test failed:', e);
-                }
-            }
-        }, 500);
-    }
-};
-
-// Force initialize with detailed logging
-window.forceInit = function() {
-    console.log('🔧 Force initialization triggered by user...');
-    
-    if (!window.SeatLayoutManager) {
-        console.error('❌ SeatLayoutManager not available!');
-        return;
-    }
-    
-    // Clear any existing initialization
-    SeatLayoutManager.initialized = false;
-    SeatLayoutManager.initRetryCount = 0;
-    
-    // Run debug first
-    debugSeatManager();
-    
-    // Force init
-    SeatLayoutManager.forceInit();
-    
-    // Check result after delay
-    setTimeout(() => {
-        console.log('🔍 Post-init check:', {
-            initialized: SeatLayoutManager.initialized,
-            canvasExists: !!document.getElementById('seat-canvas'),
-            elementsInContainer: document.getElementById('elements-container')?.children.length || 0
-        });
-    }, 1000);
-};
-
-// Test resize functionality
-window.testResize = function() {
-    console.log('🧪 Testing resize functionality...');
-    
-    if (!window.SeatLayoutManager) {
-        console.error('❌ SeatLayoutManager not available');
-        return;
-    }
-    
-    SeatLayoutManager.clearAll();
-    
-    // Create test elements
-    if (SeatLayoutManager.sellingMode === 'per_table') {
-        SeatLayoutManager.createTable(200, 200, 'square');
-        console.log('🍽️ Test table created - try hovering and resizing');
-    } else {
-        SeatLayoutManager.createSeat('Regular', 200, 200);
-        console.log('🪑 Test seat created - try hovering and resizing');
-    }
-    
-    // Show instructions
-    setTimeout(() => {
-        alert('Test element created!\n\nInstructions:\n1. Hover over the element to see resize handles\n2. Click and drag the small blue circles to resize\n3. Check console for resize events');
-    }, 500);
-};
-
-// Test different shapes
-window.testShapes = function() {
-    console.log('🧪 Testing table shapes...');
-    
-    if (!window.SeatLayoutManager) {
-        console.error('❌ SeatLayoutManager not available');
-        return;
-    }
-    
-    if (SeatLayoutManager.sellingMode !== 'per_table') {
-        alert('Switch to "Per Table" mode first!');
-        return;
-    }
-    
-    SeatLayoutManager.clearAll();
-    
-    // Create all shapes
-    SeatLayoutManager.createTable(100, 100, 'square');
-    SeatLayoutManager.createTable(300, 100, 'circle');
-    SeatLayoutManager.createTable(500, 100, 'rectangle');
-    SeatLayoutManager.createTable(700, 100, 'diamond');
-    
-    console.log('✅ All table shapes created');
-    
-    setTimeout(() => {
-        alert('All table shapes created!\n\n- Square (100,100)\n- Circle (300,100)\n- Rectangle (500,100)\n- Diamond (700,100)\n\nTry hovering to see resize handles!');
-    }, 500);
-};
-
-// Create test layout based on current mode
-window.createTestLayout = function() {
-    console.log('🧪 Creating test layout for mode:', SeatLayoutManager.sellingMode);
-    
-    if (!window.SeatLayoutManager) {
-        console.error('❌ S<style>
-/* Seat and Table Element Styles */
-.seat-element, .table-element {
-    position: absolute;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: move;
-    user-select: none;
-    font-size: 12px;
-    font-weight: bold;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.seat-element:hover, .table-element:hover {
-    border-color: #007cba;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.seat-element.selected, .table-element.selected {
-    border-color: #007cba;
-    background-color: rgba(0, 124, 186, 0.1);
-    box-shadow: 0 0 0 3px rgba(0, 124, 186, 0.3);
-}
-
-.seat-element.dragging, .table-element.dragging {
-    opacity: 0.8;
-    transform: rotate(2deg);
-    z-index: 1000;
-}
-
-/* Seat Types */
-.seat-element.regular {
-    background-color: #3b82f6;
-    color: white;
-}
-
-.seat-element.vip {
-    background-color: #f59e0b;
-    color: white;
-}
-
-/* Table Shapes */
-.table-element {
-    background-color: #8b5cf6;
-    color: white;
-}
-
-.table-element.shape-circle {
-    border-radius: 50%;
-}
-
-.table-element.shape-diamond {
-    transform-origin: center;
-}
-
-/* Table Content */
-.table-content {
-    text-align: center;
-    pointer-events: none;
-}
-
-.table-number {
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.table-capacity {
-    font-size: 10px;
-    opacity: 0.9;
-}
-
-/* Resize Handles */
-.resize-handles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-}
-
-.resize-handle {
-    position: absolute;
-    background-color: #007cba;
-    border: 1px solid white;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    pointer-events: all;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.seat-element:hover .resize-handle,
-.table-element:hover .resize-handle,
-.seat-element.selected .resize-handle,
-.table-element.selected .resize-handle {
-    opacity: 1;
-}
-
-/* Resize Handle Positions */
-.resize-handle.nw { top: -4px; left: -4px; cursor: nw-resize; }
-.resize-handle.ne { top: -4px; right: -4px; cursor: ne-resize; }
-.resize-handle.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
-.resize-handle.se { bottom: -4px; right: -4px; cursor: se-resize; }
-.resize-handle.n { top: -4px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
-.resize-handle.s { bottom: -4px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
-.resize-handle.w { top: 50%; left: -4px; transform: translateY(-50%); cursor: w-resize; }
-.resize-handle.e { top: 50%; right: -4px; transform: translateY(-50%); cursor: e-resize; }
-
-/* Canvas Tool Cursors */
-.tool-select { cursor: default; }
-.tool-regular { cursor: crosshair; }
-.tool-vip { cursor: crosshair; }
-.tool-table { cursor: crosshair; }
-.tool-delete { cursor: not-allowed; }
-
-/* Tool Button Styles */
-.tool-btn.active {
-    background-color: #007cba;
-    color: white;
-    border-color: #007cba;
-}
-
-/* Canvas */
-#seat-canvas {
-    position: relative;
-    background-color: #f8fafc;
-    border: 2px dashed #e2e8f0;
-    min-height: 600px;
-    overflow: hidden;
-}
-
-/* Background Image */
-#background-image-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 0;
-    pointer-events: none;
-}
-
-#background-image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-/* Elements Container */
-#elements-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 600px;
-    z-index: 1;
-}
-
-/* Statistics Panel */
-#statistics {
-    background-color: #f8fafc;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 14px;
-}
-
-/* Mode Toggle */
-#mode-toggle button.active {
-    background-color: #007cba;
-    color: white;
-    border-color: #007cba;
-}
-
-/* Table Shape Buttons */
-.table-shape-btn.active {
-    background-color: #8b5cf6;
-    color: white;
-    border-color: #8b5cf6;
-}
-
-/* Animation for new elements */
-@keyframes elementCreated {
-    0% {
-        transform: scale(0.8);
-        opacity: 0;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.seat-element, .table-element {
-    animation: elementCreated 0.3s ease-out;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .resize-handle {
-        width: 12px;
-        height: 12px;
-    }
-    
-    .seat-element, .table-element {
-        font-size: 11px;
-    }
-}
-</style>
-
 <script>
-// Enhanced Seat Layout Manager with Resizable Elements - FIXED VERSION
+// Enhanced Seat Layout Manager with Resizable Elements and Edit Functionality - FIXED VERSION
 window.SeatLayoutManager = {
     // Core properties
     currentTool: 'select',
@@ -1199,7 +1304,7 @@ window.SeatLayoutManager = {
     maxInitRetries: 15,
     
     init() {
-        console.log('🚀 Initializing Enhanced Seat Layout Manager');
+        console.log('🚀 Initializing Enhanced Seat Layout Manager with Edit Support');
         console.log('Initial data - Seats:', this.seats.length, 'Tables:', this.tables.length);
         this.initialized = false;
         this.initRetryCount = 0;
@@ -1213,31 +1318,91 @@ window.SeatLayoutManager = {
         console.log('✅ Enhanced initialization started');
     },
 
-    loadInitialData() {
+loadInitialData() {
         try {
+            console.log('📡 Loading initial data...');
+            
             // Safely get data from Livewire if available
             if (window.Livewire && window.Livewire.all().length > 0) {
                 const component = window.Livewire.all()[0];
                 if (component.get) {
                     this.sellingMode = component.get('selling_mode') || 'per_seat';
-                    this.seats = component.get('custom_seats') || [];
-                    this.tables = component.get('tables') || [];
-                    console.log('📡 Initial data loaded from Livewire:', {
+                    
+                    // FIXED: Load both seats and tables data properly
+                    const livewireSeats = component.get('custom_seats') || [];
+                    const livewireTables = component.get('tables') || [];
+                    
+                    // Transform and validate data
+                    this.seats = this.transformSeatsData(livewireSeats);
+                    this.tables = this.transformTablesData(livewireTables);
+                    
+                    console.log('📊 Data loaded from Livewire:', {
                         mode: this.sellingMode,
                         seats: this.seats.length,
-                        tables: this.tables.length
+                        tables: this.tables.length,
+                        seats_sample: this.seats.slice(0, 2),
+                        tables_sample: this.tables.slice(0, 2)
                     });
                 }
             } else {
-                console.log('⚠️ Livewire not available for initial data load - using defaults');
+                console.log('⚠️ Livewire not available - using defaults');
+                this.sellingMode = 'per_seat';
+                this.seats = [];
+                this.tables = [];
             }
         } catch (error) {
-            console.log('⚠️ Could not load initial data:', error);
+            console.error('❌ Error loading initial data:', error);
             // Use fallback values
             this.sellingMode = 'per_seat';
             this.seats = [];
             this.tables = [];
         }
+    },
+
+    transformSeatsData(rawSeats) {
+        if (!Array.isArray(rawSeats)) {
+            console.warn('⚠️ Invalid seats data - not an array:', rawSeats);
+            return [];
+        }
+
+        return rawSeats.map((seat, index) => {
+            const transformed = {
+                id: seat.id || `seat_${index + 1}`,
+                x: parseInt(seat.x) || 0,
+                y: parseInt(seat.y) || 0,
+                type: seat.type || 'Regular',
+                row: seat.row || this.generateSeatRow(seat.y || 0),
+                number: seat.number || (index + 1),
+                width: parseInt(seat.width) || 44,
+                height: parseInt(seat.height) || 44
+            };
+            
+            console.log(`🪑 Transformed seat ${index}:`, { original: seat, transformed });
+            return transformed;
+        });
+    },
+
+    transformTablesData(rawTables) {
+        if (!Array.isArray(rawTables)) {
+            console.warn('⚠️ Invalid tables data - not an array:', rawTables);
+            return [];
+        }
+
+        return rawTables.map((table, index) => {
+            const transformed = {
+                id: table.id || `table_${index + 1}`,
+                x: parseInt(table.x) || 0,
+                y: parseInt(table.y) || 0,
+                shape: table.shape || 'square',
+                capacity: parseInt(table.capacity) || 4,
+                number: table.number || `T${index + 1}`,
+                width: parseInt(table.width) || 120,
+                height: parseInt(table.height) || 120
+            };
+            
+            console.log(`🍽️ Transformed table ${index}:`, { original: table, transformed });
+            return transformed;
+        });
     },
 
     checkDOMReady() {
@@ -1267,33 +1432,6 @@ window.SeatLayoutManager = {
         }
     },
 
-    showDOMErrorMessage() {
-        console.error('❌ INITIALIZATION FAILED: DOM elements not found');
-        console.log('🔧 Try running: window.SeatLayoutManager.forceInit()');
-        
-        // Try to show error in UI if possible
-        setTimeout(() => {
-            const errorDiv = document.createElement('div');
-            errorDiv.innerHTML = `
-                <div style="background: #fee; border: 1px solid #fcc; padding: 12px; margin: 12px; border-radius: 4px; font-size: 14px;">
-                    <strong>⚠️ Layout Designer Error:</strong><br>
-                    Canvas tidak dapat dimuat. <button onclick="window.SeatLayoutManager.forceInit()" style="background: #007cba; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">Coba Lagi</button>
-                </div>
-            `;
-            
-            const targetContainer = document.querySelector('.modal-content') || document.querySelector('.bg-white.rounded-lg') || document.body;
-            if (targetContainer) {
-                targetContainer.prepend(errorDiv.firstElementChild);
-            }
-        }, 100);
-    },
-
-    forceInit() {
-        console.log('🔧 Force initialization triggered...');
-        this.initRetryCount = 0;
-        this.checkDOMReady();
-    },
-
     proceedWithInit() {
         try {
             console.log('🎯 Proceeding with full initialization...');
@@ -1302,7 +1440,10 @@ window.SeatLayoutManager = {
             this.setupCanvas();
             this.setupModeToggle();
             this.updateInterface();
+            
+            // FIXED: Always render existing data after interface is ready
             this.renderAll();
+            
             this.setupKeyboardShortcuts();
             this.updateStatistics();
             
@@ -1324,14 +1465,65 @@ window.SeatLayoutManager = {
 
     initializeCounters() {
         try {
-            this.seatCounter = this.seats.length > 0 ? Math.max(...this.seats.map(s => parseInt(s.id.replace('seat_', '') || 0))) : 0;
-            this.tableCounter = this.tables.length > 0 ? Math.max(...this.tables.map(t => parseInt(t.id.replace('table_', '') || 0))) : 0;
-            console.log('🔢 Counters initialized:', { seats: this.seatCounter, tables: this.tableCounter });
+            // Initialize seat counter
+            if (this.seats.length > 0) {
+                const seatNumbers = this.seats.map(s => {
+                    const idMatch = s.id.match(/\d+/);
+                    return idMatch ? parseInt(idMatch[0]) : 0;
+                });
+                this.seatCounter = Math.max(...seatNumbers, 0);
+            } else {
+                this.seatCounter = 0;
+            }
+
+            // Initialize table counter
+            if (this.tables.length > 0) {
+                const tableNumbers = this.tables.map(t => {
+                    const idMatch = t.id.match(/\d+/);
+                    return idMatch ? parseInt(idMatch[0]) : 0;
+                });
+                this.tableCounter = Math.max(...tableNumbers, 0);
+            } else {
+                this.tableCounter = 0;
+            }
+            
+            console.log('🔢 Counters initialized:', { 
+                seats: this.seatCounter, 
+                tables: this.tableCounter,
+                existing_seats: this.seats.length,
+                existing_tables: this.tables.length
+            });
         } catch (error) {
             console.warn('⚠️ Error initializing counters:', error);
             this.seatCounter = 0;
             this.tableCounter = 0;
         }
+    },
+
+    // showDOMErrorMessage() {
+    //     console.error('❌ INITIALIZATION FAILED: DOM elements not found');
+    //     console.log('🔧 Try running: window.SeatLayoutManager.forceInit()');
+        
+    //     setTimeout(() => {
+    //         const errorDiv = document.createElement('div');
+    //         errorDiv.innerHTML = `
+    //             <div style="background: #fee; border: 1px solid #fcc; padding: 12px; margin: 12px; border-radius: 4px; font-size: 14px;">
+    //                 <strong>⚠️ Layout Designer Error:</strong><br>
+    //                 Canvas tidak dapat dimuat. <button onclick="window.SeatLayoutManager.forceInit()" style="background: #007cba; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">Coba Lagi</button>
+    //             </div>
+    //         `;
+            
+    //         const targetContainer = document.querySelector('.modal-content') || document.querySelector('.bg-white.rounded-lg') || document.body;
+    //         if (targetContainer) {
+    //             targetContainer.prepend(errorDiv.firstElementChild);
+    //         }
+    //     }, 100);
+    // },
+
+    forceInit() {
+        console.log('🔧 Force initialization triggered...');
+        this.initRetryCount = 0;
+        this.checkDOMReady();
     },
 
     setupCanvas() {
@@ -1765,35 +1957,44 @@ window.SeatLayoutManager = {
         console.log('🧹 Cleared existing elements');
         
         // Render tables first (lower z-index)
-        this.tables.forEach((table, index) => {
-            try {
-                console.log(`🍽️ Rendering table ${index + 1}/${this.tables.length}:`, table.id);
-                this.renderTable(table);
-            } catch (error) {
-                console.error(`❌ Error rendering table ${table.id}:`, error);
-            }
-        });
+        if (this.tables && this.tables.length > 0) {
+            this.tables.forEach((table, index) => {
+                try {
+                    console.log(`🍽️ Rendering table ${index + 1}/${this.tables.length}:`, table);
+                    this.renderTable(table);
+                } catch (error) {
+                    console.error(`❌ Error rendering table ${table.id}:`, error);
+                }
+            });
+        }
         
         // Render seats
-        this.seats.forEach((seat, index) => {
-            try {
-                console.log(`🪑 Rendering seat ${index + 1}/${this.seats.length}:`, seat.id);
-                this.renderSeat(seat);
-            } catch (error) {
-                console.error(`❌ Error rendering seat ${seat.id}:`, error);
-            }
-        });
+        if (this.seats && this.seats.length > 0) {
+            this.seats.forEach((seat, index) => {
+                try {
+                    console.log(`🪑 Rendering seat ${index + 1}/${this.seats.length}:`, seat);
+                    this.renderSeat(seat);
+                } catch (error) {
+                    console.error(`❌ Error rendering seat ${seat.id}:`, error);
+                }
+            });
+        }
         
         console.log('✅ All elements rendered successfully');
     },
 
-    renderTable(table) {
+     renderTable(table) {
         const container = document.getElementById('elements-container');
+        if (!container) {
+            console.error('❌ Cannot render table - container not found');
+            return;
+        }
+
         const element = document.createElement('div');
         
         element.className = `table-element shape-${table.shape || 'square'}`;
-        element.style.left = table.x + 'px';
-        element.style.top = table.y + 'px';
+        element.style.left = (table.x || 0) + 'px';
+        element.style.top = (table.y || 0) + 'px';
         element.style.width = (table.width || 120) + 'px';
         element.style.height = (table.height || 120) + 'px';
         element.dataset.tableId = table.id;
@@ -1805,35 +2006,88 @@ window.SeatLayoutManager = {
         
         element.innerHTML = `
             <div class="table-content">
-                <div class="table-number">${table.number}</div>
-                <div class="table-capacity">${table.capacity} kursi</div>
+                <div class="table-number">${table.number || 'T1'}</div>
+                <div class="table-capacity">${table.capacity || 4} kursi</div>
             </div>
             ${this.createResizeHandles()}
         `;
         
         this.makeTableInteractive(element);
         container.appendChild(element);
+        
+        console.log('✅ Table rendered:', table.id);
     },
 
     renderSeat(seat) {
         const container = document.getElementById('elements-container');
+        if (!container) {
+            console.error('❌ Cannot render seat - container not found');
+            return;
+        }
+
         const element = document.createElement('div');
-        const isTableSeat = seat.table_id !== null;
+        const isTableSeat = seat.table_id !== null && seat.table_id !== undefined;
         
-        element.className = `seat-element ${seat.type.toLowerCase()} ${isTableSeat ? 'table-seat' : ''}`;
-        element.style.left = seat.x + 'px';
-        element.style.top = seat.y + 'px';
+        element.className = `seat-element ${(seat.type || 'regular').toLowerCase()} ${isTableSeat ? 'table-seat' : ''}`;
+        element.style.left = (seat.x || 0) + 'px';
+        element.style.top = (seat.y || 0) + 'px';
         element.style.width = (seat.width || 44) + 'px';
         element.style.height = (seat.height || 44) + 'px';
         element.dataset.seatId = seat.id;
         
         element.innerHTML = `
-            <span>${seat.number}</span>
+            <span>${seat.number || 1}</span>
             ${this.createResizeHandles()}
         `;
         
         this.makeSeatInteractive(element);
         container.appendChild(element);
+        
+        console.log('✅ Seat rendered:', seat.id);
+    },
+
+    reloadDataFromLivewire() {
+        console.log('🔄 Reloading data from Livewire...');
+        
+        try {
+            this.loadInitialData();
+            
+            // Update interface to match loaded data
+            this.updateInterface();
+            
+            // Re-render everything
+            this.renderAll();
+            
+            // Update statistics
+            this.updateStatistics();
+            
+            console.log('✅ Data reloaded successfully:', {
+                mode: this.sellingMode,
+                seats: this.seats.length,
+                tables: this.tables.length
+            });
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Error reloading data:', error);
+            return false;
+        }
+    },
+
+    forceInitForEdit() {
+        console.log('🔧 Force initialization for edit mode...');
+        
+        // Reset initialization state
+        this.initialized = false;
+        this.initRetryCount = 0;
+        
+        // Load fresh data from Livewire
+        this.loadInitialData();
+        
+        // Proceed with initialization
+        this.checkDOMReady();
+        
+        console.log('✅ Edit mode initialization triggered');
     },
 
     createResizeHandles() {
@@ -1851,6 +2105,7 @@ window.SeatLayoutManager = {
         `;
     },
 
+    // Continue with remaining methods...
     makeTableInteractive(element) {
         const tableId = element.dataset.tableId;
         const table = this.tables.find(t => t.id === tableId);
@@ -2289,7 +2544,6 @@ window.SeatLayoutManager = {
         let statisticsHTML = '';
         
         if (this.sellingMode === 'per_table') {
-            // For per_table mode, only count tables and total capacity
             let totalCapacity = 0;
             this.tables.forEach(table => {
                 totalCapacity += table.capacity || 4;
@@ -2297,7 +2551,6 @@ window.SeatLayoutManager = {
 
             estimatedRevenue = totalTables * tablePrice;
             
-            // Count tables by shape
             const shapeCount = {};
             this.tables.forEach(table => {
                 const shape = table.shape || 'square';
@@ -2315,7 +2568,6 @@ window.SeatLayoutManager = {
                 </div>
             `;
             
-            // Add shape breakdown
             if (Object.keys(shapeCount).length > 0) {
                 statisticsHTML += '<hr class="my-2"><div class="text-xs text-gray-500">Bentuk Meja:</div>';
                 Object.entries(shapeCount).forEach(([shape, count]) => {
@@ -2335,7 +2587,6 @@ window.SeatLayoutManager = {
                 });
             }
         } else {
-            // For per_seat mode, count individual seats
             const regularCount = this.seats.filter(s => s.type === 'Regular').length;
             const vipCount = this.seats.filter(s => s.type === 'VIP').length;
             const totalSeats = this.seats.length;
@@ -2418,36 +2669,48 @@ window.SeatLayoutManager = {
         
         const errors = [];
         
+        // Basic validation
+        const layoutName = document.getElementById('layout_name')?.value || '';
+        if (!layoutName.trim()) {
+            errors.push('Nama layout harus diisi');
+        }
+        
         if (this.sellingMode === 'per_table') {
             if (this.tables.length === 0) {
                 errors.push('Layout harus memiliki minimal satu meja');
+                console.error('❌ No tables found in per_table mode');
             }
             
             // Validate each table
             this.tables.forEach((table, index) => {
-                if (!table.x || !table.y) {
+                if (!table.x && table.x !== 0 || !table.y && table.y !== 0) {
                     errors.push(`Meja ${index + 1} tidak memiliki posisi yang valid`);
                 }
-                if (!table.capacity || table.capacity < 2 || table.capacity > 12) {
-                    errors.push(`Meja ${index + 1} kapasitas tidak valid (2-12 orang)`);
-                }
-                if (!table.shape) {
-                    errors.push(`Meja ${index + 1} tidak memiliki bentuk`);
-                }
+            });
+            
+            console.log('📊 Table validation:', {
+                tables_count: this.tables.length,
+                tables_data: this.tables.slice(0, 2) // Log the first 2 tables
             });
         } else {
             if (this.seats.length === 0) {
                 errors.push('Layout harus memiliki minimal satu kursi');
+                console.error('❌ No seats found in per_seat mode');
             }
             
             // Validate each seat
             this.seats.forEach((seat, index) => {
-                if (!seat.x || !seat.y) {
+                if (!seat.x && seat.x !== 0 || !seat.y && seat.y !== 0) {
                     errors.push(`Kursi ${index + 1} tidak memiliki posisi yang valid`);
                 }
                 if (!seat.type || !['Regular', 'VIP'].includes(seat.type)) {
                     errors.push(`Kursi ${index + 1} tipe tidak valid`);
                 }
+            });
+            
+            console.log('📊 Seat validation:', {
+                seats_count: this.seats.length,
+                seats_data: this.seats.slice(0, 2) // Log the first 2 seats
             });
         }
         
@@ -2479,40 +2742,70 @@ window.SeatLayoutManager = {
             return false;
         }
         
-        console.log('📊 Data to sync:', {
-            mode: this.sellingMode,
-            seats: this.seats.length,
-            tables: this.tables.length
-        });
+        // Log data mode penjualan dan jumlah data yang akan disinkronkan
+        console.log(`🔍 Selling mode: ${this.sellingMode}`);
+        console.log(`🔢 Data count: ${this.sellingMode === 'per_seat' ? this.seats.length + ' seats' : this.tables.length + ' tables'}`);
+        
+        // Transform data based on selling mode
+        let dataToSync;
+        
+        if (this.sellingMode === 'per_table') {
+            // Transform tables data for backend
+            const transformedTables = this.tables.map(table => {
+                return {
+                    id: table.id,
+                    x: table.x,
+                    y: table.y,
+                    shape: table.shape || 'square',
+                    capacity: table.capacity || 4,
+                    number: table.number || ('T' + table.id.replace('table_', '')),
+                    width: table.width || 120,
+                    height: table.height || 120
+                };
+            });
+            
+            dataToSync = {
+                selling_mode: 'per_table',
+                tables: transformedTables,
+                custom_seats: [] // Kosongkan data kursi
+            };
+            
+            console.log('📊 Tables data to sync:', {
+                tables_count: transformedTables.length,
+                sample_table: transformedTables.length > 0 ? transformedTables[0] : null
+            });
+        } else {
+            // Transform seats data for backend
+            const transformedSeats = this.seats.map(seat => {
+                return {
+                    id: seat.id,
+                    x: seat.x,
+                    y: seat.y,
+                    type: seat.type,
+                    row: seat.row || this.generateSeatRow(seat.y),
+                    number: seat.number || seat.id.replace('seat_', ''),
+                    width: seat.width || 44,
+                    height: seat.height || 44
+                };
+            });
+            
+            dataToSync = {
+                selling_mode: 'per_seat',
+                custom_seats: transformedSeats,
+                tables: [] // Kosongkan data meja
+            };
+            
+            console.log('📊 Seats data to sync:', {
+                seats_count: transformedSeats.length,
+                sample_seat: transformedSeats.length > 0 ? transformedSeats[0] : null
+            });
+        }
         
         // Try multiple ways to access Livewire component
         let component = null;
         
-        // Method 1: Try @this if available
-        // if (window.Livewire && typeof @this !== 'undefined') {
-        //     try {
-        //         component = @this;
-        //         console.log('✅ Using @this component');
-        //     } catch (e) {
-        //         console.log('⚠️ @this not available:', e);
-        //     }
-        // }
-        
-        // Method 2: Try Livewire.find
-        // if (!component && window.Livewire && window.Livewire.find) {
-        //     try {
-        //         const wireId = document.querySelector('[wire\\:id]')?.getAttribute('wire:id');
-        //         if (wireId) {
-        //             component = window.Livewire.find(wireId);
-        //             // console.log('✅ Using Livewire.find with ID:', wireId);
-        //         }
-        //     } catch (e) {
-        //         console.log('⚠️ Livewire.find failed:', e);
-        //     }
-        // }
-        
-        // Method 3: Try Livewire.all()
-        if (!component && window.Livewire && window.Livewire.all) {
+        // Try Livewire.all()
+        if (window.Livewire && window.Livewire.all) {
             try {
                 const components = window.Livewire.all();
                 if (components.length > 0) {
@@ -2529,42 +2822,51 @@ window.SeatLayoutManager = {
                 // Try different methods to set data
                 if (typeof component.set === 'function') {
                     // Method 1: Direct set
+                    component.set('selling_mode', dataToSync.selling_mode);
+                    
                     if (this.sellingMode === 'per_table') {
-                        component.set('tables', this.tables);
+                        component.set('tables', dataToSync.tables);
                         component.set('custom_seats', []);
-                        // console.log('✅ Tables synced via set():', this.tables.length);
                     } else {
-                        component.set('custom_seats', this.seats);
+                        component.set('custom_seats', dataToSync.custom_seats);
                         component.set('tables', []);
-                        // console.log('✅ Seats synced via set():', this.seats.length);
                     }
-                    component.set('selling_mode', this.sellingMode);
                     
-                } else if (typeof component.call === 'function') {
-                    // Method 2: Use call method
-                    const syncData = {
-                        selling_mode: this.sellingMode,
-                        custom_seats: this.sellingMode === 'per_seat' ? this.seats : [],
-                        tables: this.sellingMode === 'per_table' ? this.tables : []
-                    };
+                    console.log('✅ Data synced via set() method');
                     
-                    component.call('syncLayoutData', syncData);
-                    // console.log('✅ Data synced via call() method');
-                    
+                    // Verify data was set properly
+                    try {
+                        const verifyMode = component.get('selling_mode');
+                        const verifyTables = component.get('tables') || [];
+                        const verifySeats = component.get('custom_seats') || [];
+                        
+                        console.log('🔍 Verification after sync:', {
+                            selling_mode: verifyMode,
+                            tables_count: verifyTables.length,
+                            seats_count: verifySeats.length
+                        });
+                    } catch (e) {
+                        console.warn('⚠️ Could not verify data:', e);
+                    }
                 } else {
-                    // Method 3: Direct property assignment
-                    component.$wire.selling_mode = this.sellingMode;
-                    if (this.sellingMode === 'per_table') {
-                        component.$wire.tables = this.tables;
-                        component.$wire.custom_seats = [];
+                    // Fallback: Try direct wire property update
+                    if (component.$wire) {
+                        component.$wire.selling_mode = dataToSync.selling_mode;
+                        
+                        if (this.sellingMode === 'per_table') {
+                            component.$wire.tables = dataToSync.tables;
+                            component.$wire.custom_seats = [];
+                        } else {
+                            component.$wire.custom_seats = dataToSync.custom_seats;
+                            component.$wire.tables = [];
+                        }
+                        
+                        console.log('✅ Data synced via $wire properties');
                     } else {
-                        component.$wire.custom_seats = this.seats;
-                        component.$wire.tables = [];
+                        throw new Error('Cannot find appropriate method to sync data');
                     }
-                    // console.log('✅ Data synced via $wire properties');
                 }
                 
-                // console.log('🎯 Data sync completed successfully');
                 return true;
                 
             } catch (error) {
@@ -2572,12 +2874,11 @@ window.SeatLayoutManager = {
                 
                 // Fallback: Try to update form inputs manually
                 try {
-                    this.updateFormInputsManually();
-                    // console.log('✅ Used manual form input fallback');
+                    this.updateFormInputsManually(dataToSync);
+                    console.log('✅ Used manual form input fallback');
                     return true;
                 } catch (fallbackError) {
                     console.error('❌ Manual fallback also failed:', fallbackError);
-                    // alert('Error sinkronisasi data: ' + error.message);
                     return false;
                 }
             }
@@ -2586,7 +2887,7 @@ window.SeatLayoutManager = {
             
             // Try manual form input update as fallback
             try {
-                this.updateFormInputsManually();
+                this.updateFormInputsManually(dataToSync);
                 console.log('✅ Used manual form input fallback (no component)');
                 return true;
             } catch (error) {
@@ -2597,7 +2898,7 @@ window.SeatLayoutManager = {
     },
 
     // Manual fallback for updating form inputs
-    updateFormInputsManually() {
+    updateFormInputsManually(dataToSync) {
         console.log('🔧 Using manual form input update...');
         
         // Create hidden inputs to store data
@@ -2612,30 +2913,33 @@ window.SeatLayoutManager = {
         const seatsInput = document.createElement('input');
         seatsInput.type = 'hidden';
         seatsInput.name = 'layout_data_seats';
-        seatsInput.value = JSON.stringify(this.sellingMode === 'per_seat' ? this.seats : []);
+        seatsInput.value = JSON.stringify(dataToSync.custom_seats || []);
         form.appendChild(seatsInput);
         
         const tablesInput = document.createElement('input');
         tablesInput.type = 'hidden';
         tablesInput.name = 'layout_data_tables';
-        tablesInput.value = JSON.stringify(this.sellingMode === 'per_table' ? this.tables : []);
+        tablesInput.value = JSON.stringify(dataToSync.tables || []);
         form.appendChild(tablesInput);
         
         const modeInput = document.createElement('input');
         modeInput.type = 'hidden';
         modeInput.name = 'layout_data_mode';
-        modeInput.value = this.sellingMode;
+        modeInput.value = dataToSync.selling_mode;
         form.appendChild(modeInput);
         
-        console.log('✅ Manual form inputs created');
-    }
+        console.log('✅ Manual form inputs created:', {
+            mode: dataToSync.selling_mode,
+            seats_count: (dataToSync.custom_seats || []).length,
+            tables_count: (dataToSync.tables || []).length
+        });
+    },
 };
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM Content Loaded');
     
-    // Small delay to ensure everything is ready
     setTimeout(() => {
         if (window.SeatLayoutManager) {
             console.log('🔄 Starting Enhanced SeatLayoutManager initialization...');
@@ -2646,15 +2950,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
+
 // Initialize when modal opens
 document.addEventListener('livewire:initialized', () => {
     console.log('⚡ Livewire initialized');
+    
+    // FIXED: Listen for layout data loaded event
+    Livewire.on('layout-data-loaded', (data) => {
+        console.log('📡 Layout data loaded event received:', data);
+        
+        if (window.SeatLayoutManager) {
+            // Update SeatLayoutManager with new data
+            SeatLayoutManager.sellingMode = data[0].selling_mode;
+            SeatLayoutManager.seats = data[0].custom_seats || [];
+            SeatLayoutManager.tables = data[0].tables || [];
+            
+            console.log('📊 Data updated in SeatLayoutManager:', {
+                mode: SeatLayoutManager.sellingMode,
+                seats: SeatLayoutManager.seats.length,
+                tables: SeatLayoutManager.tables.length
+            });
+            
+            // Wait for modal to be fully rendered, then initialize
+            setTimeout(() => {
+                if (document.getElementById('seat-canvas')) {
+                    console.log('🔄 Initializing SeatLayoutManager for edit mode...');
+                    SeatLayoutManager.forceInitForEdit();
+                } else {
+                    console.warn('⚠️ Canvas not found after data load event');
+                }
+            }, 500);
+        }
+    });
     
     Livewire.hook('morph.updated', () => {
         console.log('🔄 Livewire DOM updated - Re-initializing...');
         setTimeout(() => {
             if (window.SeatLayoutManager && document.getElementById('seat-canvas')) {
-                SeatLayoutManager.init();
+                // FIXED: Use enhanced initialization for edit mode
+                SeatLayoutManager.forceInitForEdit();
             }
         }, 300);
     });
@@ -2663,18 +2997,17 @@ document.addEventListener('livewire:initialized', () => {
 // Enhanced form submission handler with validation
 document.addEventListener('submit', function(e) {
     const form = e.target.closest('form');
+    console.log('📨 Form submission detected:', form);
     if (form && window.SeatLayoutManager) {
         console.log('📝 Form submission intercepted...');
         e.preventDefault();
         
-        // Check if SeatLayoutManager is properly initialized
         if (!SeatLayoutManager.initialized) {
             console.error('❌ SeatLayoutManager not initialized');
             alert('Error: Layout designer belum siap. Mohon tunggu sebentar dan coba lagi.');
             return false;
         }
         
-        // Check if canvas exists
         const canvas = document.getElementById('seat-canvas');
         if (!canvas) {
             console.error('❌ Canvas not found during form submission');
@@ -2690,12 +3023,10 @@ document.addEventListener('submit', function(e) {
             setTimeout(() => {
                 console.log('📨 Submitting form now...');
                 
-                // Find submit button and trigger Livewire submit
                 const submitButton = form.querySelector('button[type="submit"]');
                 if (submitButton) {
                     submitButton.click();
                 } else {
-                    // Fallback: try to trigger Livewire method directly
                     if (window.Livewire && window.Livewire.all().length > 0) {
                         window.Livewire.all()[0].call('saveLayout');
                     } else {
@@ -2710,6 +3041,39 @@ document.addEventListener('submit', function(e) {
         return false;
     }
 });
+
+// Function to save layout manually
+function saveLayout() {
+    console.log('💾 Manual save layout triggered...');
+    
+    if (!window.SeatLayoutManager) {
+        console.error('❌ SeatLayoutManager not available');
+        alert('Layout Manager tidak tersedia');
+        return;
+    }
+    
+    const syncSuccess = SeatLayoutManager.syncWithLivewire();
+    
+    if (syncSuccess) {
+        console.log('✅ Data synced, proceeding with save...');
+        
+        if (window.Livewire && window.Livewire.all().length > 0) {
+            try {
+                window.Livewire.all()[0].call('saveLayout');
+                console.log('📤 Livewire saveLayout called');
+            } catch (error) {
+                console.error('❌ Error calling Livewire saveLayout:', error);
+                alert('Error: Tidak dapat menyimpan layout. Mohon coba lagi.');
+            }
+        } else {
+            console.error('❌ Livewire not available for save');
+            alert('Error: Livewire tidak tersedia. Mohon refresh halaman.');
+        }
+    } else {
+        console.error('❌ Cannot save - sync failed');
+        alert('Gagal menyinkronkan data. Mohon periksa data layout dan coba lagi.');
+    }
+}
 
 // Debug helper functions
 window.debugSeatManager = function() {
@@ -2753,5 +3117,157 @@ window.testCreateTable = function() {
     }
 };
 
+// Check system status
+window.checkSystemStatus = function() {
+    console.log('📊 SYSTEM STATUS:');
+    console.log('================');
+    console.log('🚀 SeatLayoutManager:', !!window.SeatLayoutManager);
+    console.log('⚡ Livewire:', !!(window.Livewire && window.Livewire.all().length > 0));
+    console.log('🖥️ Canvas DOM:', !!document.getElementById('seat-canvas'));
+    console.log('📦 Container DOM:', !!document.getElementById('elements-container'));
+    console.log('🔧 Initialized:', window.SeatLayoutManager?.initialized || false);
+    console.log('📋 Current Mode:', window.SeatLayoutManager?.sellingMode || 'unknown');
+    console.log('🪑 Seats Count:', window.SeatLayoutManager?.seats?.length || 0);
+    console.log('🍽️ Tables Count:', window.SeatLayoutManager?.tables?.length || 0);
+    
+    if (window.Livewire && window.Livewire.all().length > 0) {
+        try {
+            const component = window.Livewire.all()[0];
+            console.log('📡 Livewire Data:');
+            console.log('  - selling_mode:', component.get('selling_mode'));
+            console.log('  - custom_seats:', (component.get('custom_seats') || []).length);
+            console.log('  - tables:', (component.get('tables') || []).length);
+        } catch (e) {
+            console.log('⚠️ Cannot read Livewire data:', e);
+        }
+    }
+    
+    return {
+        seatLayoutManager: !!window.SeatLayoutManager,
+        livewire: !!(window.Livewire && window.Livewire.all().length > 0),
+        canvas: !!document.getElementById('seat-canvas'),
+        container: !!document.getElementById('elements-container'),
+        initialized: window.SeatLayoutManager?.initialized || false
+    };
+};
+
+// Force sync data
+window.forceSyncData = function() {
+    console.log('🔄 Force sync data triggered...');
+    
+    if (!window.SeatLayoutManager) {
+        console.error('❌ SeatLayoutManager not available');
+        return false;
+    }
+    
+    const result = SeatLayoutManager.syncWithLivewire();
+    console.log('🔍 Sync result:', result);
+    return result;
+};
+
+// Test save layout
+window.testSaveLayout = function() {
+    console.log('🧪 Testing save layout...');
+    
+    // Create some test data first
+    if (window.SeatLayoutManager) {
+        if (SeatLayoutManager.sellingMode === 'per_table') {
+            SeatLayoutManager.createTable(100, 100, 'square');
+            SeatLayoutManager.createTable(250, 150, 'circle');
+            console.log('🍽️ Created test tables');
+        } else {
+            SeatLayoutManager.createSeat('Regular', 100, 100);
+            SeatLayoutManager.createSeat('VIP', 150, 100);
+            console.log('🪑 Created test seats');
+        }
+        
+        // Now try to save
+        saveLayout();
+    }
+};
+
+// Manual save layout
+window.manualSaveLayout = function() {
+    console.log('💾 Manual save layout...');
+    saveLayout();
+};
+
+// Check tables data
+window.checkTablesData = function() {
+    if (!window.SeatLayoutManager) {
+        console.error('❌ SeatLayoutManager not available');
+        return;
+    }
+    
+    const tableData = {
+        tables: SeatLayoutManager.tables,
+        count: SeatLayoutManager.tables.length,
+        selling_mode: SeatLayoutManager.sellingMode
+    };
+    
+    console.log('🍽️ Current Tables Data:', tableData);
+    
+    if (window.Livewire && window.Livewire.all().length > 0) {
+        const component = window.Livewire.all()[0];
+        const livewireTables = component.get ? component.get('tables') : null;
+        const livewireMode = component.get ? component.get('selling_mode') : null;
+        
+        console.log('⚡ Livewire Tables Data:', {
+            tables: livewireTables,
+            count: livewireTables ? livewireTables.length : 0,
+            selling_mode: livewireMode
+        });
+    }
+    
+    return tableData;
+};
+
+// Force table mode
+window.forceTableMode = function() {
+    if (!window.SeatLayoutManager) {
+        console.error('❌ SeatLayoutManager not available');
+        return;
+    }
+    
+    // Set to table mode
+    SeatLayoutManager.setSellingMode('per_table');
+    
+    // Clear existing elements
+    SeatLayoutManager.clearAll();
+    
+    // Create some tables
+    SeatLayoutManager.createTable(100, 100, 'square');
+    SeatLayoutManager.createTable(250, 150, 'circle');
+    SeatLayoutManager.createTable(400, 200, 'rectangle');
+    
+    console.log('✅ Created test tables in per_table mode:', SeatLayoutManager.tables);
+    
+    return SeatLayoutManager.tables;
+};
+
+window.reloadLayoutData = function() {
+    console.log('📡 Global function: reloadLayoutData triggered');
+    
+    if (window.SeatLayoutManager) {
+        return SeatLayoutManager.reloadDataFromLivewire();
+    } else {
+        console.error('❌ SeatLayoutManager not available');
+        return false;
+    }
+};
+
+window.initEditMode = function() {
+    console.log('🔧 Global function: initEditMode triggered');
+    
+    if (window.SeatLayoutManager) {
+        SeatLayoutManager.forceInitForEdit();
+        return true;
+    } else {
+        console.error('❌ SeatLayoutManager not available');
+        return false;
+    }
+};
+
+console.log('✅ Enhanced Seat Layout Manager with Edit Functionality loaded successfully!');
 </script>
 @endpush

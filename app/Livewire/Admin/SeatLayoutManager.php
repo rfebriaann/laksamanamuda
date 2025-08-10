@@ -1,210 +1,772 @@
 <?php
-// Berikut adalah contoh tambahan untuk SeatLayoutManager.php
-
+// wifi sebiji bawah
+// username : desember
+// pass : simonelli
 namespace App\Livewire\Admin;
 
 use App\Models\Event;
 use App\Models\SeatLayout;
 use App\Models\Seat;
+use App\Models\Table;
 use Livewire\Component;
 use Livewire\Attributes\Rule;
-use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Exception;
+use Livewire\Attributes\Layout;
 
 class SeatLayoutManager extends Component
 {
-    // Tambahkan WithFileUploads jika ingin menyimpan background image ke server
-    use WithFileUploads;
-    
+    #[On('updateSeats')]
+    public $listeners = ['updateSeats'];
     public Event $event;
     public $seatLayouts = [];
     
     #[Rule('required|string|max:255')]
     public $layout_name = '';
     
-    public $selling_mode = 'per_seat'; // Default: per kursi
-    public $tables = [];
-    public $table_price = 500000; // Default harga meja
-    public $table_capacity = 4;
-
+    public $rows;
+    public $columns;
+    public $vip_rows = [];
     public $vip_price = 300000;
     public $regular_price = 150000;
     public $custom_seats = [];
     
-    // Tambahan untuk background image
-    public $background_image = null;
-    public $save_background = false;
+    // Mode penjualan: per_seat atau per_table
+    public $selling_mode = 'per_seat';
+    public $tables = [];
+    public $table_price = 500000;
+    public $table_capacity = 4;
     
     public $showLayoutModal = false;
     public $editingLayoutId = null;
-
-    protected $listeners = [
-        'updateSeatPosition',
-        'updateTablePosition', 
-        'updateLayoutData',
-        'syncSeatsAndTables'
-    ];
     
-    public $eventlocal;
+    // Debug properties
+    public $debug_mode = false;
+    public $debug_info = [];
+
+    public function updateSeats($seats)
+    {
+        $this->debugLog('updateSeats', [
+            'input_seats' => $seats,
+            'seats_count' => is_array($seats) ? count($seats) : 'not_array',
+            'seats_data_sample' => is_array($seats) && count($seats) > 0 ? array_slice($seats, 0, 3) : 'empty_or_invalid'
+        ]);
+        
+        if (is_array($seats)) {
+            $this->custom_seats = $seats;
+            $this->debugLog('updateSeats_success', [
+                'updated_seats_count' => count($this->custom_seats)
+            ]);
+        } else {
+            $this->debugLog('updateSeats_error', [
+                'error' => 'Invalid seats data - not an array',
+                'received_type' => gettype($seats),
+                'received_value' => $seats
+            ]);
+        }
+    }
+
     public function mount(Event $event)
     {
-    // dd($this->tables);
-    try {
-        \Log::info('🚀 SeatLayoutManager mounting', [
-            'event_id' => $event->event_id,
-            'event_name' => $event->event_name
-        ]);
-
+        $this->columns = 20;
+        $this->rows = 10;
         $this->event = $event;
         
-        // Verify event exists
-        if (!$this->event) {
-            throw new \Exception('Event not found');
-        }
-
-        // Load existing layouts
-        $this->loadSeatLayouts();
-        
-        \Log::info('✅ SeatLayoutManager mounted successfully', [
-            'layouts_count' => count($this->seatLayouts)
+        $this->debugLog('component_mount', [
+            'event_id' => $event->event_id ?? $event->id ?? 'no_id',
+            'event_name' => $event->event_name ?? $event->name ?? 'no_name',
+            'event_object' => [
+                'id_field' => $event->id ?? 'missing',
+                'event_id_field' => $event->event_id ?? 'missing',
+                'primary_key' => $event->getKeyName(),
+                'attributes' => array_keys($event->getAttributes()),
+                'fillable' => $event->getFillable()
+            ]
         ]);
-
-    } catch (\Exception $e) {
-        \Log::error('❌ Error mounting SeatLayoutManager: ' . $e->getMessage());
-        session()->flash('error', 'Error loading seat layout manager: ' . $e->getMessage());
+        
+        $this->loadSeatLayouts();
+        $this->initializeDebugMode();
     }
-}
+
+    private function initializeDebugMode()
+    {
+        // Enable debug mode if in local environment
+        $this->debug_mode = config('app.debug', false) || app()->environment('local');
+        
+        if ($this->debug_mode) {
+            $this->debugLog('debug_mode_enabled', [
+                'environment' => app()->environment(),
+                'debug_config' => config('app.debug'),
+                'log_level' => config('logging.level'),
+                'database_connection' => config('database.default')
+            ]);
+        }
+    }
+
+    private function debugLog($action, $data = [])
+    {
+        $logData = [
+            'component' => 'SeatLayoutManager',
+            'action' => $action,
+            'timestamp' => now()->toDateTimeString(),
+            'data' => $data,
+            'memory_usage' => memory_get_usage(true),
+            'session_id' => session()->getId()
+        ];
+        
+        Log::info("SeatLayoutManager Debug: {$action}", $logData);
+        
+        // Store in component for real-time debugging
+        $this->debug_info[] = $logData;
+        
+        // Keep only last 50 debug entries
+        if (count($this->debug_info) > 50) {
+            $this->debug_info = array_slice($this->debug_info, -50);
+        }
+    }
+
     public function render()
     {
         return view('livewire.admin.seat-layout-manager');
     }
 
-    public function createLayout()
+    public function loadSeatLayouts()
     {
-        $this->resetForm();
+        try {
+            $this->debugLog('load_layouts_start', [
+                'event_primary_key' => $this->event->getKeyName(),
+                'event_id_value' => $this->event->getKey()
+            ]);
+            
+            $this->seatLayouts = $this->event->seatLayouts()
+                ->withCount('seats')
+                ->get()
+                ->toArray();
+                
+            $this->debugLog('load_layouts_success', [
+                'layouts_count' => count($this->seatLayouts),
+                'layouts_sample' => count($this->seatLayouts) > 0 ? array_slice($this->seatLayouts, 0, 2) : 'none'
+            ]);
+            
+        } catch (Exception $e) {
+            $this->debugLog('load_layouts_error', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+public function editLayout($layoutId)
+{
+    try {
+        $this->debugLog('edit_layout_start', [
+            'layout_id' => $layoutId
+        ]);
+
+        $layout = SeatLayout::findOrFail($layoutId);
+        $config = $layout->layout_config;
+
+        // Set form data
+        $this->editingLayoutId = $layoutId;
+        $this->layout_name = $layout->layout_name;
+        $this->selling_mode = $config['selling_mode'] ?? 'per_seat';
+        
+        // FIXED: Load and transform seats and tables data properly
+        $this->custom_seats = $this->transformSeatsForEdit($config['custom_seats'] ?? []);
+        $this->tables = $this->transformTablesForEdit($config['tables'] ?? []);
+        
+        // Load pricing
+        $this->vip_price = $config['vip_price'] ?? 300000;
+        $this->regular_price = $config['regular_price'] ?? 150000;
+        $this->table_price = $config['table_price'] ?? 500000;
+        $this->table_capacity = $config['table_capacity'] ?? 4;
+
+        $this->debugLog('edit_layout_data_loaded', [
+            'layout_id' => $layoutId,
+            'selling_mode' => $this->selling_mode,
+            'seats_count' => count($this->custom_seats),
+            'tables_count' => count($this->tables),
+            'seats_sample' => array_slice($this->custom_seats, 0, 2),
+            'tables_sample' => array_slice($this->tables, 0, 2)
+        ]);
+
+        // Open modal
         $this->showLayoutModal = true;
-        $this->dispatch('showLayoutModal');
+
+        // FIXED: Dispatch event to trigger JavaScript data reload
+        $this->dispatch('layout-data-loaded', [
+            'selling_mode' => $this->selling_mode,
+            'custom_seats' => $this->custom_seats,
+            'tables' => $this->tables,
+            'layout_id' => $layoutId
+        ]);
+
+        $this->debugLog('edit_layout_success', [
+            'layout_id' => $layoutId,
+            'selling_mode' => $this->selling_mode,
+            'seats_count' => count($this->custom_seats),
+            'tables_count' => count($this->tables)
+        ]);
+
+    } catch (Exception $e) {
+        $this->debugLog('edit_layout_error', [
+            'layout_id' => $layoutId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        session()->flash('error', 'Gagal memuat layout: ' . $e->getMessage());
+    }
+}
+
+    public function saveLayout()
+    {
+        $this->debugLog('save_layout_start', [
+            'layout_name' => $this->layout_name,
+            'selling_mode' => $this->selling_mode,
+            'custom_seats_count' => count($this->custom_seats),
+            'custom_seats_sample' => array_slice($this->custom_seats, 0, 3),
+            'tables_count' => count($this->tables),
+            'vip_price' => $this->vip_price,
+            'regular_price' => $this->regular_price,
+            'editing_layout_id' => $this->editingLayoutId,
+            'request_data' => request()->all()
+        ]);
+
+        // Enhanced validation with debugging
+        try {
+            $this->validate();
+            $this->debugLog('validation_passed', [
+                'validated_fields' => [
+                    'layout_name' => $this->layout_name,
+                    'custom_seats_count' => count($this->custom_seats)
+                ]
+            ]);
+        } catch (Exception $e) {
+            $this->debugLog('validation_failed', [
+                'error' => $e->getMessage(),
+                'validation_errors' => $this->getErrorBag()->toArray(),
+                'current_data' => [
+                    'layout_name' => $this->layout_name,
+                    'custom_seats' => $this->custom_seats,
+                    'selling_mode' => $this->selling_mode
+                ]
+            ]);
+            return;
+        }
+
+        // Check data based on selling mode
+        if ($this->selling_mode === 'per_table') {
+            if (empty($this->tables)) {
+                $this->debugLog('no_tables_error', [
+                    'tables' => $this->tables,
+                    'selling_mode' => $this->selling_mode
+                ]);
+                // $this->generateTables($layout);
+                $this->addError('tables', 'Layout harus memiliki minimal satu meja.');
+                return;
+            }
+        } else {
+            if (empty($this->custom_seats)) {
+                // dd();
+                $this->debugLog('no_seats_error', [
+                    'custom_seats' => $this->custom_seats,
+                    'selling_mode' => $this->selling_mode
+                ]);
+                // $this->generateCustomSeats($layout);
+                $this->addError('custom_seats', 'Layout harus memiliki minimal satu kursi.');
+                return;
+            }
+        }
+
+        // Event ID debugging
+        
+        $eventId = $this->getEventId();
+        $this->debugLog('event_id_resolution', [
+            'event_object_key' => $this->event->getKey(),
+            'event_id_property' => $this->event->event_id ?? 'not_set',
+            'event_id_attribute' => $this->event->getAttribute('event_id') ?? 'not_set',
+            'resolved_event_id' => $eventId,
+            'event_table' => $this->event->getTable(),
+            'event_primary_key' => $this->event->getKeyName()
+        ]);
+
+        // Database connection debugging
+        $this->debugDatabaseConnection();
+
+        $layoutData = [
+            'event_id' => $eventId,
+            'layout_name' => $this->layout_name,
+            'layout_config' => [
+                'selling_mode' => $this->selling_mode,
+                'custom_seats' => $this->custom_seats,
+                'tables' => $this->tables,
+                'vip_price' => $this->vip_price,
+                'regular_price' => $this->regular_price,
+                'table_price' => $this->table_price,
+                'table_capacity' => $this->table_capacity,
+                'created_with' => 'interactive_designer',
+                'version' => '2.1',
+                'debug_info' => [
+                    'created_at' => now(),
+                    'user_id' => auth()->id(),
+                    'ip_address' => request()->ip()
+                ]
+            ],
+        ];
+
+        // dd($layoutData);
+
+        $this->debugLog('layout_data_prepared', [
+            'layout_data' => $layoutData,
+            'layout_data_size' => strlen(json_encode($layoutData))
+        ]);
+
+        // Table structure debugging
+        $this->debugTableStructure();
+
+        DB::beginTransaction();
+        
+        try {
+            if ($this->editingLayoutId) {
+                $this->updateExistingLayout($layoutData);
+            } else {
+                $this->createNewLayout($layoutData);
+            }
+            
+            DB::commit();
+            $this->debugLog('transaction_committed', [
+                'editing' => !!$this->editingLayoutId
+            ]);
+            
+            $this->closeModal();
+            $this->loadSeatLayouts();
+            
+        } catch (Exception $e) {
+            DB::rollBack();
+            $this->debugLog('transaction_failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'sql_state' => $e->getCode(),
+                'editing' => !!$this->editingLayoutId
+            ]);
+            
+            session()->flash('error', 'Gagal menyimpan layout: ' . $e->getMessage());
+            
+            // Additional error context
+            if (str_contains($e->getMessage(), 'foreign key')) {
+                $this->debugLog('foreign_key_constraint_error', [
+                    'event_id_used' => $layoutData['event_id'],
+                    'event_exists' => Event::where('id', $layoutData['event_id'])->exists(),
+                    'events_table_check' => $this->checkEventsTable()
+                ]);
+            }
+        }
+    }
+
+    private function getEventId()
+    {
+        // Multiple ways to get event ID
+        $eventId = null;
+        
+        if (isset($this->event->event_id)) {
+            $eventId = $this->event->event_id;
+        } elseif (isset($this->event->id)) {
+            $eventId = $this->event->id;
+        } else {
+            $eventId = $this->event->getKey();
+        }
+        
+        return $eventId;
+    }
+
+    private function debugDatabaseConnection()
+    {
+        try {
+            $connection = DB::connection();
+            $this->debugLog('database_connection_info', [
+                'connection_name' => $connection->getName(),
+                'database_name' => $connection->getDatabaseName(),
+                'table_prefix' => $connection->getTablePrefix(),
+                'driver_name' => $connection->getDriverName(),
+                'pdo_available' => $connection->getPdo() !== null,
+                'query_log_enabled' => $connection->logging()
+            ]);
+            
+            // Test database connectivity
+            $testResult = DB::select('SELECT 1 as test');
+            $this->debugLog('database_connectivity_test', [
+                'test_result' => $testResult,
+                'connection_success' => !empty($testResult)
+            ]);
+            
+        } catch (Exception $e) {
+            $this->debugLog('database_connection_error', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+        }
+    }
+
+    private function debugTableStructure()
+    {
+        try {
+            // Check SeatLayout table structure
+            $seatLayoutColumns = DB::select("DESCRIBE seat_layouts");
+            $this->debugLog('seat_layout_table_structure', [
+                'columns' => $seatLayoutColumns,
+                'table_exists' => !empty($seatLayoutColumns)
+            ]);
+            
+            // Check Seat table structure
+            $seatColumns = DB::select("DESCRIBE seats");
+            $this->debugLog('seat_table_structure', [
+                'columns' => $seatColumns,
+                'table_exists' => !empty($seatColumns)
+            ]);
+            
+            // Check Events table
+            $eventColumns = DB::select("DESCRIBE events");
+            $this->debugLog('event_table_structure', [
+                'columns' => $eventColumns,
+                'table_exists' => !empty($eventColumns)
+            ]);
+            
+        } catch (Exception $e) {
+            $this->debugLog('table_structure_check_failed', [
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    private function checkEventsTable()
+    {
+        try {
+            $eventCount = Event::count();
+            $currentEvent = Event::find($this->getEventId());
+            
+            return [
+                'total_events' => $eventCount,
+                'current_event_exists' => !is_null($currentEvent),
+                'current_event_data' => $currentEvent ? $currentEvent->toArray() : null
+            ];
+        } catch (Exception $e) {
+            return [
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    private function updateExistingLayout($layoutData)
+    {
+        $layout = SeatLayout::findOrFail($this->editingLayoutId);
+        $this->debugLog('update_layout_start', [
+            'layout_id' => $this->editingLayoutId,
+            'old_data' => $layout->toArray(),
+            'new_data' => $layoutData
+        ]);
+        
+        $layout->update($layoutData);
+        
+        $this->debugLog('layout_updated', [
+            'layout_id' => $layout->getKey(),
+            'updated_data' => $layout->fresh()->toArray()
+        ]);
+        
+        // Delete existing seats
+        $deletedSeats = $layout->seats()->count();
+        $layout->seats()->delete();
+        
+        $this->debugLog('existing_seats_deleted', [
+            'deleted_count' => $deletedSeats
+        ]);
+        
+        // Generate new seats/tables
+        if ($this->selling_mode === 'per_table') {
+            $this->generateTables($layout);
+        } else {
+            $this->generateCustomSeats($layout);
+        }
+        
+        session()->flash('message', 'Layout berhasil diperbarui!');
+    }
+
+    private function createNewLayout($layoutData)
+    {
+        $this->debugLog('create_layout_start', [
+            'layout_data' => $layoutData
+        ]);
+        
+        $layout = SeatLayout::create($layoutData);
+        
+        $this->debugLog('layout_created', [
+            'layout_id' => $layout->getKey(),
+            'created_data' => $layout->toArray()
+        ]);
+        
+        // Generate seats/tables
+        if ($this->selling_mode === 'per_table') {
+            $this->generateTables($layout);
+        } else {
+            $this->generateCustomSeats($layout);
+        }
+        
+        session()->flash('message', 'Layout berhasil dibuat!');
     }
 
     private function generateCustomSeats($layout)
-{
-    \Log::info('🪑 Generating seats for layout', [
-        'layout_id' => $layout->layout_id,
-        'seats_count' => count($this->custom_seats)
+    {
+        $this->debugLog('generate_seats_start', [
+            'layout_id' => $layout->getKey(),
+            'seats_to_create' => count($this->custom_seats),
+            'selling_mode' => $this->selling_mode
+        ]);
+
+        $createdSeats = 0;
+        $errors = [];
+
+        foreach ($this->custom_seats as $index => $seatData) {
+            try {
+                $seatNumber = $this->generateSeatNumber($seatData);
+                $seatRow = $this->generateSeatRow($seatData);
+                
+                $seatDataToCreate = [
+                    'layout_id' => $layout->getKey(),
+                    'seat_number' => $seatNumber,
+                    'seat_row' => $seatRow,
+                    'seat_type' => $seatData['type'] ?? 'Regular',
+                    'seat_price' => $seatData['type'] === 'VIP' ? $this->vip_price : $this->regular_price,
+                    'is_available' => true,
+                    'position_x' => $seatData['x'] ?? 0,
+                    'position_y' => $seatData['y'] ?? 0,
+                ];
+
+                $this->debugLog('creating_seat', [
+                    'seat_index' => $index,
+                    'seat_data' => $seatDataToCreate,
+                    'original_seat_data' => $seatData
+                ]);
+
+                $seat = Seat::create($seatDataToCreate);
+                
+                $this->debugLog('seat_created', [
+                    'seat_id' => $seat->getKey(),
+                    'seat_number' => $seat->seat_number,
+                    'created_data' => $seat->toArray()
+                ]);
+                
+                $createdSeats++;
+                
+            } catch (Exception $e) {
+                $error = [
+                    'seat_index' => $index,
+                    'seat_data' => $seatData,
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ];
+                $errors[] = $error;
+                
+                $this->debugLog('seat_creation_failed', $error);
+            }
+        }
+
+        $this->debugLog('generate_seats_completed', [
+            'total_seats_processed' => count($this->custom_seats),
+            'successfully_created' => $createdSeats,
+            'errors_count' => count($errors),
+            'errors' => $errors
+        ]);
+
+        if (count($errors) > 0) {
+            throw new Exception('Gagal membuat ' . count($errors) . ' kursi. Lihat log untuk detail.');
+        }
+    }
+
+    private function generateTables($layout)
+    {
+    // Log informasi awal
+    \Log::info('🍽️ Generating tables for layout', [
+        'layout_id' => $layout->getKey() ?? $layout->layout_id,
+        'tables_count' => count($this->tables),
+        'table_capacity' => $this->table_capacity,
+        'table_price' => $this->table_price
     ]);
 
-    foreach ($this->custom_seats as $seatData) {
-        try {
-            // Generate seat number based on provided data
-            $seatNumber = $seatData['number'] ?? str_pad($seatData['id'] ?? uniqid(), 3, '0', STR_PAD_LEFT);
-            $seatRow = $seatData['row'] ?? $this->generateSeatRow($seatData);
-            
-            $seatRecord = [
-                'layout_id' => $layout->layout_id,
-                'seat_number' => $seatNumber,
-                'seat_row' => $seatRow,
-                'seat_type' => $seatData['type'] ?? 'Regular',
-                'seat_price' => $seatData['type'] === 'VIP' ? $this->vip_price : $this->regular_price,
-                'is_available' => true,
-                'position_x' => $seatData['x'] ?? 0,
-                'position_y' => $seatData['y'] ?? 0,
-                'width' => $seatData['width'] ?? 44,
-                'height' => $seatData['height'] ?? 44,
-            ];
+    // Debug: tampilkan contoh data meja
+    if (count($this->tables) > 0) {
+        \Log::debug('📊 Contoh data meja pertama:', [
+            'table_data' => $this->tables[0]
+        ]);
+    } else {
+        \Log::warning('⚠️ Tidak ada data meja untuk dibuat!');
+        return;
+    }
+    $createdTables = 0;
+    $insertData = [];
+    $now = now();
 
-            $seat = Seat::create($seatRecord);
-            \Log::info('✅ Seat created', [
-                'seat_id' => $seat->seat_id,
-                'seat_number' => $seatNumber,
-                'seat_type' => $seatData['type']
-            ]);
+    // Membuat data untuk batch insert
+    foreach ($this->tables as $index => $tableData) {
+        try {
+            // Pastikan kapasitas meja valid
+            $capacity = isset($tableData['capacity']) ? (int)$tableData['capacity'] : $this->table_capacity;
+            if ($capacity < 2) $capacity = 2; // Minimal 2 orang
+            if ($capacity > 12) $capacity = 12; // Maksimal 12 orang
             
+            // Pastikan shape valid
+            $shape = $tableData['shape'] ?? 'square';
+            if (!in_array($shape, ['square', 'circle', 'rectangle', 'diamond'])) {
+                $shape = 'square'; // Default ke square jika tidak valid
+            }
+            
+            // Siapkan data untuk tabel (model Seat)
+            $tableRecord = [
+                'layout_id' => $layout->getKey() ?? $layout->layout_id,
+                'table_number' => $tableData['number'] ?? ('T' . ($index + 1)),
+                'capacity' => $capacity,
+                'table_price' => (float) $this->table_price, // Menggunakan seat_type 'TABLE' untuk membedakan dengan kursi
+                'position_x' => (int) ($tableData['x'] ?? 0),
+                'position_y' => (int) ($tableData['y'] ?? 0),
+                'width' => $tableData['width'] ?? 120,
+                'height' => $tableData['width'] ?? 120,
+                'is_available' => true,
+                'table_metadata' => json_encode([
+                    'table' => true,
+                    'capacity' => $capacity,
+                    'shape' => $shape,
+                    'width' => $tableData['width'] ?? 120,
+                    'height' => $tableData['height'] ?? 120
+                ]),
+                'created_at' => $now,
+                'updated_at' => $now
+            ];
+            // dd($tableRecord);
+            $insertData[] = $tableRecord;
+            
+            \Log::info('✅ Table data prepared', [
+                'index' => $index,
+                'table_number' => $tableRecord['table_number'],
+                'position' => "({$tableRecord['position_x']}, {$tableRecord['position_y']})",
+                'capacity' => $capacity,
+                'shape' => $shape
+            ]);
+
+            //  $tableSeat = Table::create($tableRecord);
+
+             $this->debugLog('table_created', [
+                'seat_id' => $tableSeat->getKey(),
+                'tableSeat_number' => $tableSeat->table_number,
+                'created_data' => $tableSeat->toArray()
+            ]);
+            $createdTables++;
         } catch (\Exception $e) {
-            \Log::error('❌ Error creating seat: ' . $e->getMessage(), [
-                'seat_data' => $seatData
+            \Log::error('❌ Error preparing table data: ' . $e->getMessage(), [
+                'index' => $index,
+                'table_data' => $tableData,
+                'trace' => $e->getTraceAsString()
             ]);
             continue;
         }
     }
-    
-    \Log::info('✅ Seats generation completed');
+
+    // Batch insert tables jika ada data
+    if (!empty($insertData)) {
+        try {
+            \DB::table('tables')->insert($insertData);
+            \Log::info('✅ Tables inserted successfully', ['count' => count($insertData)]);
+        } catch (\Exception $e) {
+            \Log::error('❌ Error inserting tables: ' . $e->getMessage(), [
+                'error_details' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    } else {
+        \Log::warning('⚠️ No table data to insert');
+    }
 }
+
+    private function generateSeatNumber($seatData)
+    {
+        $number = $seatData['number'] ?? str_pad($seatData['id'] ?? 1, 3, '0', STR_PAD_LEFT);
+        
+        $this->debugLog('generate_seat_number', [
+            'original_data' => $seatData,
+            'generated_number' => $number
+        ]);
+        
+        return $number;
+    }
 
     private function generateSeatRow($seatData)
     {
-        // Auto-generate row based on Y position (every 30px = new row)
-        $y = $seatData['y'] ?? 0;
-        $rowIndex = floor($y / 30);
-        return chr(65 + min($rowIndex, 25)); // A-Z
-    }
-
-    // Method untuk export layout sebagai PDF
-    public function exportLayoutAsPDF($layoutId)
-    {
-        $layout = SeatLayout::with('seats')->findOrFail($layoutId);
+        if (isset($seatData['row'])) {
+            $row = $seatData['row'];
+        } else {
+            $y = $seatData['y'] ?? 0;
+            $rowIndex = floor($y / 30);
+            $row = chr(65 + min($rowIndex, 25)); // A-Z
+        }
         
-        // Gunakan library PDF seperti DOMPDF atau TCPDF
-        $pdf = \PDF::loadView('admin.reports.layout-pdf', [
-            'layout' => $layout,
-            'event' => $this->event
+        $this->debugLog('generate_seat_row', [
+            'original_data' => $seatData,
+            'generated_row' => $row
         ]);
         
-        return $pdf->download("layout-{$layout->layout_name}.pdf");
-    }
-    
-    // Method untuk export layout sebagai gambar
-    public function exportLayoutAsImage($layoutId)
-    {
-        // Ini hanya contoh. Implementasi sebenarnya memerlukan JavaScript
-        // untuk mengambil screenshot dari canvas dan mengirimnya ke server
-        $this->dispatch('export-layout-as-image', ['layoutId' => $layoutId]);
+        return $row;
     }
 
-    public function deleteLayout($layoutId)
+    // Debug method to export debug info
+    public function exportDebugInfo()
     {
-        $layout = SeatLayout::findOrFail($layoutId);
+        $debugData = [
+            'component_info' => [
+                'selling_mode' => $this->selling_mode,
+                'seats_count' => count($this->custom_seats),
+                'tables_count' => count($this->tables),
+                'layout_name' => $this->layout_name,
+                'event_id' => $this->getEventId()
+            ],
+            'debug_log' => $this->debug_info,
+            'system_info' => [
+                'php_version' => PHP_VERSION,
+                'laravel_version' => app()->version(),
+                'environment' => app()->environment(),
+                'memory_limit' => ini_get('memory_limit'),
+                'max_execution_time' => ini_get('max_execution_time')
+            ],
+            'exported_at' => now()->toISOString()
+        ];
+
+        $filename = "seat-layout-debug-" . now()->format('Y-m-d-H-i-s') . '.json';
         
-        // Check if layout has any reservations
-        $hasReservations = $layout->seats()
-            ->whereHas('reservationSeats')
-            ->exists();
-            
-        if ($hasReservations) {
-            session()->flash('error', 'Tidak dapat menghapus layout yang sudah memiliki reservasi!');
-            return;
-        }
-        
-        $layout->delete();
-        session()->flash('message', 'Layout berhasil dihapus!');
-        $this->loadSeatLayouts();
+        return response()->json($debugData)
+            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
     }
 
-    public function duplicateLayout($layoutId)
+    // Method to clear debug info
+    public function clearDebugInfo()
     {
-        $layout = SeatLayout::findOrFail($layoutId);
-        
-        $newLayout = $layout->replicate();
-        $newLayout->layout_name = $layout->layout_name . ' (Copy)';
-        $newLayout->save();
-        
-        // Copy all seats
-        foreach ($layout->seats as $seat) {
-            $newSeat = $seat->replicate();
-            $newSeat->layout_id = $newLayout->layout_id;
-            $newSeat->save();
-        }
-        
-        session()->flash('message', 'Layout berhasil diduplikasi!');
-        $this->loadSeatLayouts();
+        $this->debug_info = [];
+        $this->debugLog('debug_info_cleared', [
+            'cleared_by' => auth()->user()->name ?? 'unknown'
+        ]);
     }
 
-    public function previewLayout($layoutId)
+    // Rest of your existing methods...
+    public function createLayout()
     {
-        // Could redirect to a preview page or open modal
-        // dd("Previewing layout with ID: {$this->event->event_id} and layout ID: {$layoutId}");
-        $eventid = $this->event->event_id;
-        return redirect()->route('event.seat-layout.preview', [
-            'event' => $eventid,
-            'layout' => $layoutId
+        $this->resetForm();
+        $this->showLayoutModal = true;
+        
+        $this->debugLog('create_layout_modal_opened', [
+            'user_id' => auth()->id(),
+            'session_id' => session()->getId()
         ]);
     }
 
@@ -212,1089 +774,214 @@ class SeatLayoutManager extends Component
     {
         $this->showLayoutModal = false;
         $this->resetForm();
+        
+        $this->debugLog('modal_closed', [
+            'debug_entries_count' => count($this->debug_info)
+        ]);
     }
 
- private function resetForm()
-{
-    \Log::info('🔄 Resetting form data');
-    
-    $this->editingLayoutId = null;
-    $this->layout_name = '';
-    $this->selling_mode = 'per_seat';
-    $this->vip_price = 300000;
-    $this->regular_price = 150000;
-    $this->table_price = 500000;
-    $this->table_capacity = 4;
-    $this->custom_seats = [];
-    $this->tables = [];
-    $this->resetErrorBag();
-    
-    \Log::info('✅ Form reset completed');
-}
-
-    // Helper method to get layout statistics
-    public function getLayoutStats($layoutConfig)
+    private function resetForm()
     {
-        $customSeats = $layoutConfig['custom_seats'] ?? [];
-        
-        $totalSeats = count($customSeats);
-        $vipSeats = collect($customSeats)->where('type', 'VIP')->count();
-        $regularSeats = collect($customSeats)->where('type', 'Regular')->count();
-        
-        $vipPrice = $layoutConfig['vip_price'] ?? 300000;
-        $regularPrice = $layoutConfig['regular_price'] ?? 150000;
-        
-        $estimatedRevenue = ($vipSeats * $vipPrice) + ($regularSeats * $regularPrice);
-        
-        return [
-            'total_seats' => $totalSeats,
-            'vip_seats' => $vipSeats,
-            'regular_seats' => $regularSeats,
-            'estimated_revenue' => $estimatedRevenue,
-            'vip_price' => $vipPrice,
-            'regular_price' => $regularPrice,
-        ];
-    }
-
-    // Method to export layout as JSON
-    public function exportLayout($layoutId)
-    {
-        $layout = SeatLayout::with('seats')->findOrFail($layoutId);
-        
-        $exportData = [
-            'layout_name' => $layout->layout_name,
-            'layout_config' => $layout->layout_config,
-            'seats' => $layout->seats->map(function ($seat) {
-                return [
-                    'seat_number' => $seat->seat_number,
-                    'seat_row' => $seat->seat_row,
-                    'seat_type' => $seat->seat_type,
-                    'seat_shape' => $seat->seat_shape ?? 'default',
-                    'position_x' => $seat->position_x ?? 0,
-                    'position_y' => $seat->position_y ?? 0,
-                ];
-            }),
-            'exported_at' => now()->toISOString(),
-            'event_name' => $this->event->event_name,
-        ];
-        
-        $filename = "layout-{$layout->layout_name}-" . now()->format('Y-m-d-H-i-s') . '.json';
-        
-        return response()->json($exportData)
-            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
-    }
-
-    public function updateSeatPosition($seatId, $x, $y)
-{
-    // Find seat in custom_seats array and update position
-    $customSeats = collect($this->custom_seats);
-    $seatIndex = $customSeats->search(function ($seat) use ($seatId) {
-        return $seat['id'] === $seatId;
-    });
-    
-    if ($seatIndex !== false) {
-        $this->custom_seats[$seatIndex]['x'] = $x;
-        $this->custom_seats[$seatIndex]['y'] = $y;
-    }
-}
-
-// Method to update individual table position  
-public function updateTablePosition($tableId, $x, $y)
-{
-    // Find table in tables array and update position
-    $tables = collect($this->tables);
-    $tableIndex = $tables->search(function ($table) use ($tableId) {
-        return $table['id'] === $tableId;
-    });
-    
-    if ($tableIndex !== false) {
-        $this->tables[$tableIndex]['x'] = $x;
-        $this->tables[$tableIndex]['y'] = $y;
-        
-        // Update associated seats positions relative to table
-        if (isset($this->tables[$tableIndex]['seats'])) {
-            foreach ($this->tables[$tableIndex]['seats'] as $seatIndex => $seat) {
-                // Update seat position in custom_seats as well
-                $this->updateSeatPosition($seat['id'], $seat['x'], $seat['y']);
-            }
-        }
-    }
-}
-
-// Method to sync complete layout data from JavaScript
-public function updateLayoutData($seats, $tables = [])
-{
-    \Log::info('🔄 updateLayoutData called from JavaScript', [
-        'seats_count' => count($seats),
-        'tables_count' => count($tables),
-        'selling_mode' => $this->selling_mode
-    ]);
-
-    if ($this->selling_mode === 'per_table') {
-        $this->tables = $tables;
-        $this->custom_seats = []; // Clear seats in table mode
-    } else {
-        $this->custom_seats = $seats;
-        $this->tables = []; // Clear tables in seat mode
-    }
-    
-    \Log::info('✅ Layout data updated successfully');
-}
-
-// Method to receive data from JavaScript before save
-public function syncSeatsAndTables($data)
-{
-    \Log::info('🔄 syncSeatsAndTables called', [
-        'data_keys' => array_keys($data),
-        'selling_mode' => $this->selling_mode
-    ]);
-
-    if ($this->selling_mode === 'per_table') {
-        if (isset($data['tables'])) {
-            $this->tables = $data['tables'];
-            \Log::info('✅ Tables synced', ['count' => count($this->tables)]);
-        }
-        $this->custom_seats = []; // Clear seats
-    } else {
-        if (isset($data['seats'])) {
-            $this->custom_seats = $data['seats'];
-            \Log::info('✅ Seats synced', ['count' => count($this->custom_seats)]);
-        }
-        $this->tables = []; // Clear tables
-    }
-}
-
-// Enhanced validation rules with dynamic rules based on selling mode
-protected function rules()
-{
-    $rules = [
-        'layout_name' => 'required|string|max:255',
-        'selling_mode' => 'required|in:per_seat,per_table',
-    ];
-    
-    if ($this->selling_mode === 'per_seat') {
-        $rules['vip_price'] = 'required|numeric|min:0';
-        $rules['regular_price'] = 'required|numeric|min:0';
-    } else {
-        $rules['table_price'] = 'required|numeric|min:0';
-        $rules['table_capacity'] = 'required|integer|min:2|max:12';
-    }
-    
-    return $rules;
-}
-
-// Enhanced validation messages
-protected function messages()
-{
-    return [
-        'layout_name.required' => 'Nama layout harus diisi.',
-        'layout_name.max' => 'Nama layout tidak boleh lebih dari 255 karakter.',
-        'selling_mode.required' => 'Mode penjualan harus dipilih.',
-        'selling_mode.in' => 'Mode penjualan tidak valid.',
-        'vip_price.required' => 'Harga VIP harus diisi.',
-        'regular_price.required' => 'Harga Regular harus diisi.',
-        'vip_price.min' => 'Harga VIP tidak boleh negatif.',
-        'regular_price.min' => 'Harga Regular tidak boleh negatif.',
-        'table_price.required' => 'Harga meja harus diisi.',
-        'table_price.min' => 'Harga meja tidak boleh negatif.',
-        'table_capacity.required' => 'Kapasitas meja harus diisi.',
-        'table_capacity.integer' => 'Kapasitas meja harus berupa angka.',
-        'table_capacity.min' => 'Kapasitas meja minimal 2.',
-        'table_capacity.max' => 'Kapasitas meja maksimal 12.',
-    ];
-}
-
-// Method to get layout statistics for display
-public function getLayoutStatistics($layoutConfig, $sellingMode)
-{
-    $stats = [
-        'total_seats' => 0,
-        'total_tables' => 0,
-        'total_capacity' => 0,
-        'regular_seats' => 0,
-        'vip_seats' => 0,
-        'estimated_revenue' => 0,
-        'shapes_breakdown' => []
-    ];
-
-    if ($sellingMode === 'per_table') {
-        $tables = $layoutConfig['tables'] ?? [];
-        $stats['total_tables'] = count($tables);
-        
-        // Count total capacity and shapes
-        foreach ($tables as $table) {
-            $capacity = $table['capacity'] ?? 4;
-            $stats['total_capacity'] += $capacity;
-            
-            $shape = $table['shape'] ?? 'square';
-            if (!isset($stats['shapes_breakdown'][$shape])) {
-                $stats['shapes_breakdown'][$shape] = 0;
-            }
-            $stats['shapes_breakdown'][$shape]++;
-        }
-        
-        $tablePrice = $layoutConfig['table_price'] ?? 500000;
-        $stats['estimated_revenue'] = $stats['total_tables'] * $tablePrice;
-        
-    } else {
-        // per_seat mode
-        $customSeats = $layoutConfig['custom_seats'] ?? [];
-        $stats['total_seats'] = count($customSeats);
-        
-        foreach ($customSeats as $seat) {
-            if (($seat['type'] ?? 'Regular') === 'VIP') {
-                $stats['vip_seats']++;
-            } else {
-                $stats['regular_seats']++;
-            }
-        }
-        
-        $vipPrice = $layoutConfig['vip_price'] ?? 300000;
-        $regularPrice = $layoutConfig['regular_price'] ?? 150000;
-        $stats['estimated_revenue'] = ($stats['vip_seats'] * $vipPrice) + ($stats['regular_seats'] * $regularPrice);
-    }
-
-    return $stats;
-}
-
-// Method to export layout with complete data structure
-public function exportLayoutAsJSON($layoutId)
-{
-    $layout = SeatLayout::with('seats')->findOrFail($layoutId);
-    
-    $exportData = [
-        'layout_info' => [
-            'name' => $layout->layout_name,
-            'selling_mode' => $layout->selling_mode,
-            'created_at' => $layout->created_at->toISOString(),
-            'event_name' => $this->event->event_name,
-            'event_date' => $this->event->event_date->format('Y-m-d'),
-        ],
-        'layout_config' => $layout->layout_config,
-        'seats' => $layout->seats->map(function ($seat) {
-            return [
-                'seat_number' => $seat->seat_number,
-                'seat_row' => $seat->seat_row,
-                'seat_type' => $seat->seat_type,
-                'seat_shape' => $seat->seat_shape ?? 'default',
-                'position_x' => $seat->position_x ?? 0,
-                'position_y' => $seat->position_y ?? 0,
-                'table_id' => $seat->table_id ?? null,
-            ];
-        }),
-        'statistics' => $this->getLayoutStatistics($layout->layout_config, $layout->selling_mode),
-        'export_metadata' => [
-            'exported_at' => now()->toISOString(),
-            'exported_by' => auth()->user()->name ?? 'Unknown',
-            'version' => '2.0'
-        ]
-    ];
-    
-    $filename = "layout-{$layout->layout_name}-" . now()->format('Y-m-d-H-i-s') . '.json';
-    
-    return response()->json($exportData)
-        ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
-}
-
-// Method to import layout from JSON
-public function importLayoutFromJSON($jsonData)
-{
-    try {
-        $data = json_decode($jsonData, true);
-        
-        if (!$data || !isset($data['layout_config'])) {
-            throw new \Exception('Invalid layout data format');
-        }
-        
-        // Create new layout from imported data
-        $layoutData = [
-            'event_id' => $this->event->event_id,
-            'layout_name' => $data['layout_info']['name'] . ' (Imported)',
-            'selling_mode' => $data['layout_info']['selling_mode'] ?? 'per_seat',
-            'layout_config' => $data['layout_config'],
-        ];
-
-        $layout = SeatLayout::create($layoutData);
-        
-        // Generate seats based on imported data
-        if ($layout->selling_mode === 'per_table') {
-            $this->tables = $data['layout_config']['tables'] ?? [];
-            $this->table_price = $data['layout_config']['table_price'] ?? 500000;
-            $this->generateTables($layout);
-        } else {
-            $this->custom_seats = $data['layout_config']['custom_seats'] ?? [];
-            $this->vip_price = $data['layout_config']['vip_price'] ?? 300000;
-            $this->regular_price = $data['layout_config']['regular_price'] ?? 150000;
-            $this->generateCustomSeats($layout);
-        }
-        
-        session()->flash('message', 'Layout berhasil diimpor!');
-        $this->loadSeatLayouts();
-        
-    } catch (\Exception $e) {
-        session()->flash('error', 'Gagal mengimpor layout: ' . $e->getMessage());
-    }
-}
-
-// Method to validate layout data
-private function validateLayoutData()
-{
-    $errors = [];
-    
-    if ($this->selling_mode === 'per_seat') {
-        if (empty($this->custom_seats)) {
-            $errors[] = 'Layout harus memiliki minimal satu kursi.';
-        }
-        
-        // Validate each seat
-        foreach ($this->custom_seats as $index => $seat) {
-            if (!isset($seat['x']) || !isset($seat['y'])) {
-                $errors[] = "Kursi #$index tidak memiliki posisi yang valid.";
-            }
-            if (!in_array($seat['type'] ?? '', ['Regular', 'VIP'])) {
-                $errors[] = "Kursi #$index memiliki tipe yang tidak valid.";
-            }
-        }
-    } else {
-        if (empty($this->tables)) {
-            $errors[] = 'Layout harus memiliki minimal satu meja.';
-        }
-        
-        // Validate each table
-        foreach ($this->tables as $index => $table) {
-            if (!isset($table['x']) || !isset($table['y'])) {
-                $errors[] = "Meja #$index tidak memiliki posisi yang valid.";
-            }
-            if (!isset($table['capacity']) || $table['capacity'] < 2 || $table['capacity'] > 12) {
-                $errors[] = "Meja #$index memiliki kapasitas yang tidak valid (2-12).";
-            }
-        }
-    }
-    
-    return $errors;
-}
-
-
-// Method untuk load seat layouts dengan debugging lengkap
-public function loadSeatLayouts()
-{
-    try {
-        \Log::info('📋 Loading seat layouts for event', ['event_id' => $this->event->event_id]);
-        
-        // Check if event exists and has relationships
-        if (!$this->event) {
-            \Log::error('❌ Event not found');
-            $this->seatLayouts = [];
-            return;
-        }
-
-        // Load layouts with seat count
-        $layouts = \DB::table('seat_layouts as sl')
-            ->leftJoin('seats as s', 's.layout_id', '=', 'sl.layout_id')
-            ->leftJoin('tables as t', 't.layout_id', '=', 'sl.layout_id')
-            ->select(
-                'sl.*',
-                \DB::raw('COUNT(DISTINCT s.seat_id) as seats_count'),
-                \DB::raw('COUNT(DISTINCT t.table_id) as tables_count')
-            )
-            ->where('sl.event_id', $this->event->event_id)
-            ->groupBy('sl.layout_id', 'sl.event_id', 'sl.selling_mode', 'sl.layout_name', 'sl.layout_config', 'sl.created_at', 'sl.updated_at')
-            ->orderBy('sl.created_at', 'desc')
-            ->get();
-
-        \Log::info('📊 Raw layouts loaded', [
-            'count' => $layouts->count(),
-            'layouts' => $layouts->toArray()
-        ]);
-
-        // Transform to array format
-        $this->seatLayouts = $layouts->map(function ($layout) {
-            $config = is_string($layout->layout_config) 
-                ? json_decode($layout->layout_config, true) 
-                : $layout->layout_config;
-                
-            return [
-                'layout_id' => $layout->layout_id,
-                'layout_name' => $layout->layout_name,
-                'selling_mode' => $layout->selling_mode,
-                'seats_count' => $layout->seats_count ?? 0,
-                'tables_count' => $layout->tables_count ?? 0,
-                'layout_config' => $config ?? [],
-                'created_at' => $layout->created_at,
-                'updated_at' => $layout->updated_at,
-            ];
-        })->toArray();
-
-        \Log::info('✅ Seat layouts loaded successfully', [
-            'count' => count($this->seatLayouts),
-            'layouts' => $this->seatLayouts
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('❌ Error loading seat layouts: ' . $e->getMessage(), [
-            'event_id' => $this->event->event_id ?? 'unknown',
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        $this->seatLayouts = [];
-        session()->flash('error', 'Gagal memuat layouts: ' . $e->getMessage());
-    }
-}
-
-// Method untuk edit layout yang sudah diperbaiki
-public function editLayout($layoutId)
-{
-    try {
-        $layout = SeatLayout::findOrFail($layoutId);
-        
-        $this->editingLayoutId = $layoutId;
-        $this->layout_name = $layout->layout_name;
-        $this->selling_mode = $layout->selling_mode;
-        
-        $config = $layout->layout_config;
-        
-        // Load data based on selling mode
-        if ($layout->selling_mode === 'per_seat') {
-            $this->vip_price = $config['vip_price'] ?? 300000;
-            $this->regular_price = $config['regular_price'] ?? 150000;
-            $this->custom_seats = $config['custom_seats'] ?? [];
-            $this->tables = []; // Clear tables for per_seat mode
-        } else {
-            // per_table mode
-            $this->table_price = $config['table_price'] ?? 500000;
-            $this->table_capacity = $config['table_capacity'] ?? 4;
-            $this->tables = $config['tables'] ?? [];
-            $this->custom_seats = []; // No individual seats in per_table mode
-        }
-        
-        $this->showLayoutModal = true;
-        
-        // Dispatch event to JavaScript to load layout data
-        $this->dispatch('loadLayoutData', [
-            'seats' => $this->custom_seats,
-            'tables' => $this->tables,
-            'sellingMode' => $this->selling_mode
-        ]);
-        
-    } catch (\Exception $e) {
-        session()->flash('error', 'Gagal memuat layout: ' . $e->getMessage());
-    }
-}
-
-// Method saveLayout yang sudah diperbaiki dengan debugging lengkap
-public function saveLayout()
-{
-    // dd("Save layout called with selling mode: {$this->custom_seats}, layout name: {$this->layout_name}");
-    \Log::info('🔄 saveLayout method called', [
-        'selling_mode' => $this->selling_mode,
-        'seats_count' => count($this->custom_seats ?? []),
-        'tables_count' => count($this->tables ?? []),
-        'layout_name' => $this->layout_name,
-        'event_id' => $this->event->event_id ?? 'unknown'
-    ]);
-
-    try {
-        // Log current data state
-        \Log::info('📊 Current form data:', [
-            'layout_name' => $this->layout_name,
-            'selling_mode' => $this->selling_mode,
-            'vip_price' => $this->vip_price,
-            'regular_price' => $this->regular_price,
-            'table_price' => $this->table_price,
-            'table_capacity' => $this->table_capacity,
-            'custom_seats' => $this->custom_seats,
-            'tables' => $this->tables
-        ]);
-
-        // Validate form
-        $validationRules = $this->rules();
-        \Log::info('🔍 Validation rules:', $validationRules);
-        
-        $this->validate();
-        \Log::info('✅ Basic validation passed');
-
-        // Additional validation based on mode
-        if ($this->selling_mode === 'per_seat') {
-            if (empty($this->custom_seats)) {
-                \Log::warning('❌ Validation failed: No seats in per_seat mode');
-                $this->addError('custom_seats', 'Layout harus memiliki minimal satu kursi.');
-                return;
-            }
-            \Log::info('✅ Per-seat validation passed', ['seats_count' => count($this->custom_seats)]);
-        } else {
-            if (empty($this->tables)) {
-                \Log::warning('❌ Validation failed: No tables in per_table mode');
-                $this->addError('tables', 'Layout harus memiliki minimal satu meja.');
-                return;
-            }
-            \Log::info('✅ Per-table validation passed', ['tables_count' => count($this->tables)]);
-        }
-
-        // Start database transaction
-        \DB::beginTransaction();
-        \Log::info('📊 Database transaction started');
-
-        $layoutConfig = [];
-        
-        // Set configuration based on selling mode
-        if ($this->selling_mode === 'per_seat') {
-            $layoutConfig = [
-                'custom_seats' => $this->custom_seats,
-                'vip_price' => (int) $this->vip_price,
-                'regular_price' => (int) $this->regular_price,
-                'created_with' => 'interactive_designer',
-                'version' => '2.0',
-                'created_at' => now()->toISOString()
-            ];
-            \Log::info('✅ Per-seat layout config created', [
-                'seats_count' => count($this->custom_seats),
-                'config_size' => strlen(json_encode($layoutConfig))
-            ]);
-        } else {
-            $layoutConfig = [
-                'tables' => $this->tables,
-                'table_price' => (int) $this->table_price,
-                'table_capacity' => (int) $this->table_capacity,
-                'created_with' => 'interactive_designer', 
-                'version' => '2.0',
-                'created_at' => now()->toISOString()
-            ];
-            \Log::info('✅ Per-table layout config created', [
-                'tables_count' => count($this->tables),
-                'config_size' => strlen(json_encode($layoutConfig))
-            ]);
-        }
-
-        $layoutData = [
-            'event_id' => $this->event->event_id,
-            'layout_name' => trim($this->layout_name),
-            'selling_mode' => $this->selling_mode,
-            'layout_config' => $layoutConfig,
-            'updated_at' => now()
-        ];
-
-
-        \Log::info('📝 Layout data prepared:', [
-            'event_id' => $layoutData['event_id'],
-            'layout_name' => $layoutData['layout_name'],
-            'selling_mode' => $layoutData['selling_mode'],
-            'config_keys' => array_keys($layoutConfig)
-        ]);
-
-        if ($this->editingLayoutId) {
-            // Update existing layout
-            \Log::info('🔄 Updating existing layout', ['layout_id' => $this->editingLayoutId]);
-            
-            $layout = \DB::table('seat_layouts')
-                ->where('layout_id', $this->editingLayoutId)
-                ->first();
-                
-            if (!$layout) {
-                throw new \Exception("Layout dengan ID {$this->editingLayoutId} tidak ditemukan");
-            }
-            
-            \DB::table('seat_layouts')
-                ->where('layout_id', $this->editingLayoutId)
-                ->update($layoutData);
-                
-            \Log::info('✅ Layout updated in database');
-            
-            // Delete existing seats and tables
-            $deletedSeats = \DB::table('seats')
-                ->where('layout_id', $this->editingLayoutId)
-                ->delete();
-                
-            $deletedTables = \DB::table('tables')
-                ->where('layout_id', $this->editingLayoutId)
-                ->delete();
-                
-            \Log::info('🗑️ Existing data cleaned', [
-                'deleted_seats' => $deletedSeats,
-                'deleted_tables' => $deletedTables
-            ]);
-            
-            $layoutId = $this->editingLayoutId;
-            $message = 'Layout berhasil diperbarui!';
-        } else {
-            // Create new layout
-            \Log::info('🆕 Creating new layout');
-            
-            $layoutData['created_at'] = now();
-            
-            $layoutId = \DB::table('seat_layouts')->insertGetId($layoutData);
-            \Log::info('✅ New layout created', ['layout_id' => $layoutId]);
-            $message = 'Layout berhasil dibuat!';
-        }
-        
-        // Generate seats/tables based on mode
-        if ($this->selling_mode === 'per_table') {
-            $this->generateTablesForLayout($layoutId);
-            \Log::info('🍽️ Tables generated for layout');
-        } else {
-            $this->generateSeatsForLayout($layoutId);
-            \Log::info('🪑 Seats generated for layout');
-        }
-        
-        \DB::commit();
-        \Log::info('✅ Transaction committed successfully');
-        session()->flash('message', $message);
-        
-    } catch (\Exception $e) {
-        \DB::rollback();
-        \Log::error('❌ Error saving layout: ' . $e->getMessage(), [
-            'selling_mode' => $this->selling_mode,
-            'layout_name' => $this->layout_name,
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        session()->flash('error', 'Gagal menyimpan layout: ' . $e->getMessage());
-        return;
-    }
-
-    $this->closeModal();
-    $this->loadSeatLayouts();
-}
-
-// Method generateTablesForLayout yang diperbaiki
-private function generateTablesForLayout($layoutId)
-{
-    \Log::info('🍽️ Generating tables for layout', [
-        'layout_id' => $layoutId,
-        'tables_count' => count($this->tables)
-    ]);
-
-    $insertData = [];
-    $now = now();
-
-    foreach ($this->tables as $index => $tableData) {
-        try {
-            $tableRecord = [
-                'layout_id' => $layoutId,
-                'table_number' => $tableData['number'] ?? 'T' . ($index + 1),
-                'capacity' => (int) ($tableData['capacity'] ?? 4),
-                'table_price' => (float) $this->table_price,
-                'position_x' => (float) ($tableData['x'] ?? 0),
-                'position_y' => (float) ($tableData['y'] ?? 0),
-                'created_at' => $now,
-                'updated_at' => $now
-            ];
-
-            $insertData[] = $tableRecord;
-            
-            \Log::info('✅ Table data prepared', [
-                'index' => $index,
-                'table_number' => $tableRecord['table_number'],
-                'capacity' => $tableRecord['capacity']
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('❌ Error preparing table data: ' . $e->getMessage(), [
-                'index' => $index,
-                'table_data' => $tableData
-            ]);
-            continue;
-        }
-    }
-
-    if (!empty($insertData)) {
-        try {
-            \DB::table('tables')->insert($insertData);
-            \Log::info('✅ Tables inserted successfully', ['count' => count($insertData)]);
-        } catch (\Exception $e) {
-            \Log::error('❌ Error inserting tables: ' . $e->getMessage());
-            throw $e;
-        }
-    }
-}
-
-// Method generateSeatsForLayout yang diperbaiki
-private function generateSeatsForLayout($layoutId)
-{
-    \Log::info('🪑 Generating seats for layout', [
-        'layout_id' => $layoutId,
-        'seats_count' => count($this->custom_seats)
-    ]);
-
-    $insertData = [];
-    $now = now();
-
-    foreach ($this->custom_seats as $index => $seatData) {
-        try {
-            $seatType = $seatData['type'] ?? 'Regular';
-            $seatPrice = $seatType === 'VIP' ? $this->vip_price : $this->regular_price;
-            
-            $seatRecord = [
-                'layout_id' => $layoutId,
-                'seat_number' => $seatData['number'] ?? ($index + 1),
-                'seat_row' => $seatData['row'] ?? $this->generateSeatRow($seatData),
-                'seat_type' => $seatType,
-                'seat_price' => (float) $seatPrice,
-                'is_available' => true,
-                'position_x' => (int) ($seatData['x'] ?? 0),
-                'position_y' => (int) ($seatData['y'] ?? 0),
-                'seat_metadata' => json_encode([
-                    'width' => $seatData['width'] ?? 44,
-                    'height' => $seatData['height'] ?? 44,
-                    'shape' => $seatData['shape'] ?? 'square'
-                ]),
-                'created_at' => $now,
-                'updated_at' => $now
-            ];
-
-            $insertData[] = $seatRecord;
-            
-            \Log::info('✅ Seat data prepared', [
-                'index' => $index,
-                'seat_number' => $seatRecord['seat_number'],
-                'seat_type' => $seatRecord['seat_type']
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('❌ Error preparing seat data: ' . $e->getMessage(), [
-                'index' => $index,
-                'seat_data' => $seatData
-            ]);
-            continue;
-        }
-    }
-
-    if (!empty($insertData)) {
-        try {
-            \DB::table('seats')->insert($insertData);
-            \Log::info('✅ Seats inserted successfully', ['count' => count($insertData)]);
-        } catch (\Exception $e) {
-            \Log::error('❌ Error inserting seats: ' . $e->getMessage());
-            throw $e;
-        }
-    }
-}
-
-
-// debugging
-
-public function createTestLayout()
-{
-    try {
-        \Log::info('🧪 Creating manual test layout');
-        
-        $testLayoutData = [
-            'event_id' => $this->event->event_id,
-            'layout_name' => 'Test Layout ' . now()->format('Y-m-d H:i:s'),
-            'selling_mode' => 'per_seat',
-            'layout_config' => json_encode([
-                'custom_seats' => [
-                    [
-                        'id' => 'seat_1',
-                        'x' => 100,
-                        'y' => 100,
-                        'type' => 'Regular',
-                        'number' => 1,
-                        'row' => 'A'
-                    ],
-                    [
-                        'id' => 'seat_2',
-                        'x' => 150,
-                        'y' => 100,
-                        'type' => 'VIP',
-                        'number' => 2,
-                        'row' => 'A'
-                    ]
-                ],
-                'vip_price' => 300000,
-                'regular_price' => 150000,
-                'created_with' => 'manual_test',
-                'version' => '2.0'
-            ]),
-            'created_at' => now(),
-            'updated_at' => now()
-        ];
-        
-        $layoutId = \DB::table('seat_layouts')->insertGetId($testLayoutData);
-        
-        // Create test seats
-        $seatData = [
-            [
-                'layout_id' => $layoutId,
-                'seat_number' => '1',
-                'seat_row' => 'A',
-                'seat_type' => 'Regular',
-                'seat_price' => 150000,
-                'is_available' => true,
-                'position_x' => 100,
-                'position_y' => 100,
-                'created_at' => now(),
-                'updated_at' => now()
-            ],
-            [
-                'layout_id' => $layoutId,
-                'seat_number' => '2',
-                'seat_row' => 'A',
-                'seat_type' => 'VIP',
-                'seat_price' => 300000,
-                'is_available' => true,
-                'position_x' => 150,
-                'position_y' => 100,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]
-        ];
-        
-        \DB::table('seats')->insert($seatData);
-        
-        \Log::info('✅ Test layout created successfully', [
-            'layout_id' => $layoutId,
-            'seats_created' => count($seatData)
-        ]);
-        
-        // Reload layouts
-        $this->loadSeatLayouts();
-        
-        session()->flash('message', 'Test layout berhasil dibuat dengan ID: ' . $layoutId);
-        
-        return [
-            'success' => true,
-            'layout_id' => $layoutId,
-            'message' => 'Test layout created successfully'
-        ];
-        
-    } catch (\Exception $e) {
-        \Log::error('❌ Failed to create test layout: ' . $e->getMessage());
-        session()->flash('error', 'Gagal membuat test layout: ' . $e->getMessage());
-        
-        return [
-            'success' => false,
-            'message' => $e->getMessage()
-        ];
-    }
-}
-
-public function testDatabaseConnection()
-{
-    $tests = [];
-    
-    try {
-        // Test 1: Basic DB connection
-        $tests['db_connection'] = \DB::connection()->getPdo() ? 'OK' : 'FAILED';
-        
-        // Test 2: Event model
-        if ($this->event) {
-            $tests['event_model'] = 'OK - ID: ' . $this->event->event_id;
-        } else {
-            $tests['event_model'] = 'FAILED - No event';
-        }
-        
-        // Test 3: Direct query test
-        try {
-            $layoutCount = \DB::table('seat_layouts')
-                ->where('event_id', $this->event->event_id)
-                ->count();
-            $tests['direct_query'] = 'OK - Found ' . $layoutCount . ' layouts';
-        } catch (\Exception $e) {
-            $tests['direct_query'] = 'FAILED - ' . $e->getMessage();
-        }
-        
-        // Test 4: Model relationships (if using Eloquent)
-        try {
-            if (class_exists('App\Models\SeatLayout')) {
-                $modelCount = \App\Models\SeatLayout::where('event_id', $this->event->event_id)->count();
-                $tests['model_query'] = 'OK - Found ' . $modelCount . ' layouts via model';
-            } else {
-                $tests['model_query'] = 'SKIPPED - SeatLayout model not found';
-            }
-        } catch (\Exception $e) {
-            $tests['model_query'] = 'FAILED - ' . $e->getMessage();
-        }
-        
-        \Log::info('🧪 Database connection tests', $tests);
-        
-    } catch (\Exception $e) {
-        \Log::error('❌ Database connection test failed: ' . $e->getMessage());
-        $tests['error'] = $e->getMessage();
-    }
-    
-    return $tests;
-}
-
-public function checkDatabaseTables()
-{
-    $results = [];
-    
-    try {
-        // Check if tables exist
-        $results['tables_exist'] = [
-            'seat_layouts' => \Schema::hasTable('seat_layouts'),
-            'seats' => \Schema::hasTable('seats'),
-            'tables' => \Schema::hasTable('tables'),
-            'events' => \Schema::hasTable('events')
-        ];
-        
-        // Check table structures
-        if ($results['tables_exist']['seat_layouts']) {
-            $results['seat_layouts_columns'] = \Schema::getColumnListing('seat_layouts');
-        }
-        
-        if ($results['tables_exist']['seats']) {
-            $results['seats_columns'] = \Schema::getColumnListing('seats');
-        }
-        
-        if ($results['tables_exist']['tables']) {
-            $results['tables_columns'] = \Schema::getColumnListing('tables');
-        }
-        
-        // Check data counts
-        $results['data_counts'] = [
-            'events' => \DB::table('events')->count(),
-            'seat_layouts' => \DB::table('seat_layouts')->count(),
-            'seats' => \DB::table('seats')->count(),
-            'tables' => \DB::table('tables')->count(),
-        ];
-        
-        // Check current event data
-        if ($this->event) {
-            $results['current_event'] = [
-                'id' => $this->event->event_id,
-                'name' => $this->event->event_name,
-                'layouts_for_event' => \DB::table('seat_layouts')
-                    ->where('event_id', $this->event->event_id)
-                    ->count()
-            ];
-        }
-        
-        \Log::info('🔍 Database check results', $results);
-        
-    } catch (\Exception $e) {
-        \Log::error('❌ Database check failed: ' . $e->getMessage());
-        $results['error'] = $e->getMessage();
-    }
-    
-    return $results;
-}
-
-public function fullSystemCheck()
-{
-    $results = [
-        'timestamp' => now()->toISOString(),
-        'event_info' => [
-            'exists' => !is_null($this->event),
-            'id' => $this->event->event_id ?? null,
-            'name' => $this->event->event_name ?? null
-        ],
-        'database_check' => $this->checkDatabaseTables(),
-        'connection_test' => $this->testDatabaseConnection(),
-        'current_state' => [
-            'selling_mode' => $this->selling_mode,
-            'layout_name' => $this->layout_name,
-            'custom_seats_count' => count($this->custom_seats ?? []),
-            'tables_count' => count($this->tables ?? []),
-            'editing_id' => $this->editingLayoutId,
-            'loaded_layouts_count' => count($this->seatLayouts)
-        ]
-    ];
-    
-    \Log::info('🔍 Full system check completed', $results);
-    
-    // Dispatch to frontend
-    $this->dispatch('system-check-complete', $results);
-    
-    return $results;
-}
-
-public function debugSystemStatus()
-{
-    $debugInfo = [
-        'event' => [
-            'exists' => !is_null($this->event),
-            'id' => $this->event->event_id ?? 'null',
-            'name' => $this->event->event_name ?? 'null'
-        ],
-        'database' => [
-            'seat_layouts_count' => \DB::table('seat_layouts')->count(),
-            'seats_count' => \DB::table('seats')->count(),
-            'tables_count' => \DB::table('tables')->count(),
-        ],
-        'current_state' => [
-            'selling_mode' => $this->selling_mode,
-            'layout_name' => $this->layout_name,
-            'custom_seats' => count($this->custom_seats ?? []),
-            'tables' => count($this->tables ?? []),
-            'editing_id' => $this->editingLayoutId,
-        ],
-        'loaded_layouts' => [
-            'count' => count($this->seatLayouts),
-            'layouts' => $this->seatLayouts
-        ]
-    ];
-
-    \Log::info('🐛 System Debug Info', $debugInfo);
-    
-    // Return untuk JavaScript
-    $this->dispatch('debug-info', $debugInfo);
-    
-    return $debugInfo;
-}
-
-// Method untuk test save dengan data dummy
-public function testSaveWithDummyData()
-{
-    try {
-        \Log::info('🧪 Testing save with dummy data');
-        
-        // Reset form
-        $this->resetForm();
-        
-        // Set dummy data
-        $this->layout_name = 'Test Layout ' . now()->format('Y-m-d H:i:s');
-        $this->selling_mode = 'per_seat';
+        $this->editingLayoutId = null;
+        $this->layout_name = '';
         $this->vip_price = 300000;
         $this->regular_price = 150000;
+        $this->table_price = 500000;
+        $this->custom_seats = [];
+        $this->tables = [];
+        $this->resetErrorBag();
         
-        // Add dummy seats
-        $this->custom_seats = [
-            [
-                'id' => 'seat_1',
-                'layout_id' => null, // Will be set later
-                'table_id' => null, // No table for per_seat mode
-                'seat_number' => 1,
-                'set_row' => 'A',
-                'set_type' => 'Regular',
-                'set_price' => $this->regular_price,
-                'is_available' => true,
-                'position_x' => 100,
-                'position_y' => 100,
-                'width' => 44,
-                'height' => 44,
-                'seat_metadata' => json_encode([
-                    'shape' => 'square'
-                ])
-            ],
-            // [
-            //     'id' => 'seat_2',
-            //     'x' => 150,
-            //     'y' => 100,
-            //     'seeat_type' => 'VIP',
-            //     'seat_number' => 2,
-            //     'set_row' => 'A',
-            //     'width' => 44,
-            //     'height' => 44
-            // ]
+        $this->debugLog('form_reset', [
+            'reset_fields' => [
+                'layout_name', 'custom_seats', 'tables', 'prices'
+            ]
+        ]);
+    }
+
+    protected function rules()
+    {
+        $rules = [
+            'layout_name' => 'required|string|max:255',
+            'vip_price' => 'required|numeric|min:0',
+            'regular_price' => 'required|numeric|min:0',
+            'table_price' => 'required|numeric|min:0',
         ];
 
-        \Log::info('🧪 Dummy data prepared', [
-            'layout_name' => $this->layout_name,
-            'seats_count' => count($this->custom_seats)
-        ]);
+        if ($this->selling_mode === 'per_table') {
+            $rules['tables'] = 'array|min:1';
+            $rules['tables.*.x'] = 'required|numeric|min:0';
+            $rules['tables.*.y'] = 'required|numeric|min:0';
+            $rules['tables.*.capacity'] = 'required|integer|min:2|max:12';
+        } else {
+            $rules['custom_seats'] = 'array|min:1';
+            $rules['custom_seats.*.id'] = 'required';
+            $rules['custom_seats.*.x'] = 'required|numeric|min:0';
+            $rules['custom_seats.*.y'] = 'required|numeric|min:0';
+            $rules['custom_seats.*.type'] = 'required|in:Regular,VIP';
+        }
 
-        // Try to save
-        $this->saveLayout();
-        
-        session()->flash('message', 'Test save berhasil!');
-        
-    } catch (\Exception $e) {
-        \Log::error('❌ Test save failed: ' . $e->getMessage());
-        session()->flash('error', 'Test save gagal: ' . $e->getMessage());
+        return $rules;
     }
+
+    protected function messages()
+    {
+        return [
+            'layout_name.required' => 'Nama layout harus diisi.',
+            'custom_seats.min' => 'Layout harus memiliki minimal satu kursi.',
+            'tables.min' => 'Layout harus memiliki minimal satu meja.',
+            'custom_seats.*.type.in' => 'Tipe kursi harus Regular atau VIP.',
+            'tables.*.capacity.required' => 'Kapasitas meja harus diisi.',
+            'tables.*.capacity.min' => 'Kapasitas meja minimal 2 orang.',
+            'tables.*.capacity.max' => 'Kapasitas meja maksimal 12 orang.',
+        ];
+    }
+
+
+/**
+ * Transform seats data for edit mode
+ * Ensures all required fields are present and properly formatted
+ */
+private function transformSeatsForEdit($seats)
+{
+    if (!is_array($seats)) {
+        $this->debugLog('transform_seats_invalid_input', [
+            'input' => $seats,
+            'type' => gettype($seats)
+        ]);
+        return [];
+    }
+
+    $transformedSeats = [];
+    
+    foreach ($seats as $index => $seat) {
+        try {
+            // Ensure seat has all required fields
+            $transformedSeat = [
+                'id' => $seat['id'] ?? 'seat_' . ($index + 1),
+                'x' => (int) ($seat['x'] ?? 0),
+                'y' => (int) ($seat['y'] ?? 0),
+                'type' => $seat['type'] ?? 'Regular',
+                'row' => $seat['row'] ?? $this->generateSeatRowFromY($seat['y'] ?? 0),
+                'number' => $seat['number'] ?? ($index + 1),
+                'width' => (int) ($seat['width'] ?? 44),
+                'height' => (int) ($seat['height'] ?? 44),
+                'table_id' => $seat['table_id'] ?? null
+            ];
+
+            // Validate seat type
+            if (!in_array($transformedSeat['type'], ['Regular', 'VIP'])) {
+                $transformedSeat['type'] = 'Regular';
+            }
+
+            // Ensure minimum dimensions
+            if ($transformedSeat['width'] < 32) $transformedSeat['width'] = 44;
+            if ($transformedSeat['height'] < 32) $transformedSeat['height'] = 44;
+
+            $transformedSeats[] = $transformedSeat;
+            
+            $this->debugLog('seat_transformed', [
+                'index' => $index,
+                'original' => $seat,
+                'transformed' => $transformedSeat
+            ]);
+
+        } catch (Exception $e) {
+            $this->debugLog('seat_transform_error', [
+                'index' => $index,
+                'seat' => $seat,
+                'error' => $e->getMessage()
+            ]);
+            // Skip invalid seats
+            continue;
+        }
+    }
+
+    $this->debugLog('seats_transformation_complete', [
+        'input_count' => count($seats),
+        'output_count' => count($transformedSeats),
+        'first_few' => array_slice($transformedSeats, 0, 3)
+    ]);
+
+    return $transformedSeats;
 }
 
+/**
+ * Transform tables data for edit mode
+ * Ensures all required fields are present and properly formatted
+ */
+private function transformTablesForEdit($tables)
+{
+    if (!is_array($tables)) {
+        $this->debugLog('transform_tables_invalid_input', [
+            'input' => $tables,
+            'type' => gettype($tables)
+        ]);
+        return [];
+    }
+
+    $transformedTables = [];
+    
+    foreach ($tables as $index => $table) {
+        try {
+            // Ensure table has all required fields
+            $transformedTable = [
+                'id' => $table['id'] ?? 'table_' . ($index + 1),
+                'x' => (int) ($table['x'] ?? 0),
+                'y' => (int) ($table['y'] ?? 0),
+                'shape' => $table['shape'] ?? 'square',
+                'capacity' => (int) ($table['capacity'] ?? 4),
+                'number' => $table['number'] ?? 'T' . ($index + 1),
+                'width' => (int) ($table['width'] ?? 120),
+                'height' => (int) ($table['height'] ?? 120)
+            ];
+
+            // Validate table shape
+            if (!in_array($transformedTable['shape'], ['square', 'circle', 'rectangle', 'diamond'])) {
+                $transformedTable['shape'] = 'square';
+            }
+
+            // Validate capacity
+            if ($transformedTable['capacity'] < 2) $transformedTable['capacity'] = 2;
+            if ($transformedTable['capacity'] > 12) $transformedTable['capacity'] = 12;
+
+            // Ensure minimum dimensions
+            if ($transformedTable['width'] < 80) $transformedTable['width'] = 120;
+            if ($transformedTable['height'] < 80) $transformedTable['height'] = 120;
+
+            $transformedTables[] = $transformedTable;
+            
+            $this->debugLog('table_transformed', [
+                'index' => $index,
+                'original' => $table,
+                'transformed' => $transformedTable
+            ]);
+
+        } catch (Exception $e) {
+            $this->debugLog('table_transform_error', [
+                'index' => $index,
+                'table' => $table,
+                'error' => $e->getMessage()
+            ]);
+            // Skip invalid tables
+            continue;
+        }
+    }
+
+    $this->debugLog('tables_transformation_complete', [
+        'input_count' => count($tables),
+        'output_count' => count($transformedTables),
+        'first_few' => array_slice($transformedTables, 0, 3)
+    ]);
+
+    return $transformedTables;
+}
+
+/**
+ * Generate seat row letter from Y position
+ */
+private function generateSeatRowFromY($y)
+{
+    $rowIndex = floor($y / 50);
+    return chr(65 + min($rowIndex, 25)); // A-Z
+}
 }
