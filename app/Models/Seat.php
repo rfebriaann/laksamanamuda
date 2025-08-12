@@ -15,7 +15,7 @@ class Seat extends Model
 
     protected $fillable = [
         'layout_id', 
-        'table_id',  // Tambahan foreign key untuk relasi ke meja
+        'table_id', 
         'seat_number', 
         'seat_row', 
         'seat_type', 

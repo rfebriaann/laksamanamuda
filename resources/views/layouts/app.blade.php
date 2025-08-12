@@ -12,7 +12,7 @@
     </head>
     <body class="">
         {{-- <x-side-menu /> --}}
-        <div class="sm:ml-64 bg-gray-50 m-6 rounded-2xl">
+        <div class="sm:ml-64 md:ml-0 bg-gray-50 m-6 rounded-2xl">
             {{$slot}}
         </div>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

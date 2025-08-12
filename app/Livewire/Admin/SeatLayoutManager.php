@@ -224,6 +224,7 @@ public function editLayout($layoutId)
 
     public function saveLayout()
     {
+        // dd($this->selling_mode);
         $this->debugLog('save_layout_start', [
             'layout_name' => $this->layout_name,
             'selling_mode' => $this->selling_mode,
