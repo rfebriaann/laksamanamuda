@@ -295,7 +295,8 @@
         background-image: 
             linear-gradient(rgba(0,0,0,.1) 1px, transparent 1px),
             linear-gradient(90deg, rgba(0,0,0,.1) 1px, transparent 1px);
-        background-size: 20px 20px;
+        /* DIUBAH: dari 20px ke 10px untuk precision tinggi */
+        background-size: 10px 10px;
         position: relative;
         overflow: hidden;
         cursor: default;
@@ -327,27 +328,32 @@
         touch-action: none;
         user-select: none;
         position: absolute;
-        min-width: 32px;
-        min-height: 32px;
-        width: 44px;
-        height: 44px;
+        /* DIUBAH: dari 32px ke 12px untuk ultra small support */
+        min-width: 12px;
+        min-height: 12px;
+        /* DIUBAH: dari 44px ke 15px untuk default yang lebih kecil */
+        width: 15px;
+        height: 15px;
         border-radius: 4px;
         text-align: center;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        /* DIUBAH: dari 12px ke 7px untuk elemen kecil */
+        font-size: 7px;
         font-weight: bold;
         color: white;
         cursor: move;
         z-index: 10;
-        border: 2px solid white;
+        /* DIUBAH: dari 2px ke 1px untuk elemen kecil */
+        border: 1px solid white;
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         transition: transform 0.1s, box-shadow 0.1s;
     }
     
     .seat-element:hover {
-        transform: scale(1.1);
+        /* DIUBAH: dari 1.1 ke 1.2 untuk visibility yang lebih baik */
+        transform: scale(1.2);
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         z-index: 100;
     }
@@ -375,7 +381,8 @@
     .table-element {
         position: absolute;
         background-color: #8B5CF6; /* purple-500 */
-        border: 2px solid white;
+        /* DIUBAH: dari 2px ke 1px untuk elemen kecil */
+        border: 1px solid white;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -386,10 +393,14 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         cursor: move;
         transition: transform 0.1s, box-shadow 0.1s;
-        min-width: 80px;
-        min-height: 80px;
-        width: 120px;
-        height: 120px;
+        /* DIUBAH: dari 80px ke 20px untuk ultra small table support */
+        min-width: 20px;
+        min-height: 20px;
+        /* DIUBAH: dari 120px ke 30px untuk default yang lebih kecil */
+        width: 30px;
+        height: 30px;
+        /* TAMBAHAN: font size untuk table kecil */
+        font-size: 6px;
     }
 
     /* Table shape variants */
@@ -482,8 +493,9 @@
         background: #4F46E5;
         border: 1px solid white;
         border-radius: 2px;
-        width: 8px;
-        height: 8px;
+        /* DIUBAH: dari 8px ke 6px untuk elemen kecil */
+        width: 6px;
+        height: 6px;
         z-index: 1001;
     }
 
@@ -658,6 +670,210 @@
         transform-origin: 0 0;
         transition: transform 0.2s ease;
     }
+
+    /* ========== TAMBAHAN BARU UNTUK ULTRA SMALL SUPPORT ========== */
+
+    /* RESPONSIVE FONT SIZES BERDASARKAN UKURAN ELEMENT */
+
+    /* Ultra Small Seats (12-15px) */
+    .seat-element[style*="width: 12px"], 
+    .seat-element[style*="width: 13px"],
+    .seat-element[style*="width: 14px"],
+    .seat-element[style*="width: 15px"] {
+        font-size: 6px;
+        border-radius: 50%; /* Bulat seperti di background */
+        border-width: 1px;
+    }
+
+    /* Very Small Seats (16-20px) */
+    .seat-element[style*="width: 16px"],
+    .seat-element[style*="width: 17px"],
+    .seat-element[style*="width: 18px"],
+    .seat-element[style*="width: 19px"],
+    .seat-element[style*="width: 20px"] {
+        font-size: 7px;
+        border-radius: 50%;
+    }
+
+    /* Small Seats (21-30px) */
+    .seat-element[style*="width: 2"][style*="px"],
+    .seat-element[style*="width: 30px"] {
+        font-size: 8px;
+        border-radius: 50%;
+    }
+
+    /* Normal Seats (31-44px) */
+    .seat-element[style*="width: 3"][style*="px"],
+    .seat-element[style*="width: 44px"] {
+        font-size: 10px;
+        border-radius: 4px; /* Kembali ke kotak untuk ukuran normal */
+    }
+
+    /* Large Seats (45px+) */
+    .seat-element[style*="width: 4"][style*="px"],
+    .seat-element[style*="width: 5"][style*="px"],
+    .seat-element[style*="width: 6"][style*="px"],
+    .seat-element[style*="width: 7"][style*="px"],
+    .seat-element[style*="width: 8"][style*="px"],
+    .seat-element[style*="width: 9"][style*="px"] {
+        font-size: 12px;
+        border-radius: 4px;
+    }
+
+    /* ULTRA SMALL TABLE STYLES */
+
+    /* Ultra Small Tables (20-30px) */
+    .table-element[style*="width: 20px"],
+    .table-element[style*="width: 21px"],
+    .table-element[style*="width: 22px"],
+    .table-element[style*="width: 23px"],
+    .table-element[style*="width: 24px"],
+    .table-element[style*="width: 25px"],
+    .table-element[style*="width: 26px"],
+    .table-element[style*="width: 27px"],
+    .table-element[style*="width: 28px"],
+    .table-element[style*="width: 29px"],
+    .table-element[style*="width: 30px"] {
+        font-size: 6px;
+        border-radius: 2px;
+    }
+
+    /* Small Tables (31-50px) */
+    .table-element[style*="width: 3"][style*="px"],
+    .table-element[style*="width: 4"][style*="px"],
+    .table-element[style*="width: 50px"] {
+        font-size: 7px;
+        border-radius: 3px;
+    }
+
+    /* Medium Tables (51-80px) */
+    .table-element[style*="width: 5"][style*="px"],
+    .table-element[style*="width: 6"][style*="px"],
+    .table-element[style*="width: 7"][style*="px"],
+    .table-element[style*="width: 80px"] {
+        font-size: 8px;
+        border-radius: 4px;
+    }
+
+    /* Large Tables (81px+) */
+    .table-element[style*="width: 8"][style*="px"],
+    .table-element[style*="width: 9"][style*="px"],
+    .table-element[style*="width: 1"][style*="px"] {
+        font-size: 10px;
+        border-radius: 6px;
+    }
+
+    /* ULTRA SMALL RESIZE HANDLES */
+    /* Resize handles untuk elemen ultra kecil (12-25px) */
+    .seat-element[style*="width: 12px"] .resize-handle,
+    .seat-element[style*="width: 13px"] .resize-handle,
+    .seat-element[style*="width: 14px"] .resize-handle,
+    .seat-element[style*="width: 15px"] .resize-handle,
+    .seat-element[style*="width: 16px"] .resize-handle,
+    .seat-element[style*="width: 17px"] .resize-handle,
+    .seat-element[style*="width: 18px"] .resize-handle,
+    .seat-element[style*="width: 19px"] .resize-handle,
+    .seat-element[style*="width: 20px"] .resize-handle,
+    .table-element[style*="width: 20px"] .resize-handle,
+    .table-element[style*="width: 21px"] .resize-handle,
+    .table-element[style*="width: 22px"] .resize-handle,
+    .table-element[style*="width: 23px"] .resize-handle,
+    .table-element[style*="width: 24px"] .resize-handle,
+    .table-element[style*="width: 25px"] .resize-handle {
+        width: 4px;        /* SANGAT KECIL untuk ultra small elements */
+        height: 4px;       /* SANGAT KECIL untuk ultra small elements */
+        opacity: 0.9;      /* Lebih visible */
+        background-color: #ff6b6b; /* Warna lebih mencolok */
+    }
+
+    /* HOVER EFFECTS UNTUK ELEMEN ULTRA KECIL */
+    /* Hover effect khusus untuk ultra small */
+    .seat-element[style*="width: 12px"]:hover,
+    .seat-element[style*="width: 13px"]:hover,
+    .seat-element[style*="width: 14px"]:hover,
+    .seat-element[style*="width: 15px"]:hover {
+        transform: scale(1.5); /* Scale lebih besar untuk visibility */
+        box-shadow: 0 0 0 2px #4F46E5; /* Outline highlight */
+    }
+
+    /* SELECTED STATE UNTUK ELEMEN ULTRA KECIL */
+    /* Selected state khusus untuk ultra small */
+    .seat-element[style*="width: 12px"].selected,
+    .seat-element[style*="width: 13px"].selected,
+    .seat-element[style*="width: 14px"].selected,
+    .seat-element[style*="width: 15px"].selected {
+        outline: 1px solid #4F46E5; /* Outline tipis */
+        outline-offset: 0px;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); /* Shadow lebih kuat */
+    }
+
+    /* ULTRA SMALL ELEMENT CONTENT ADJUSTMENTS */
+    /* Hide text untuk elemen ultra kecil, show only dot */
+    .seat-element[style*="width: 12px"] span,
+    .seat-element[style*="width: 13px"] span,
+    .seat-element[style*="width: 14px"] span {
+        display: none;
+    }
+
+    .seat-element[style*="width: 12px"]::after,
+    .seat-element[style*="width: 13px"]::after,
+    .seat-element[style*="width: 14px"]::after {
+        content: "•";
+        font-size: 8px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Ultra small table content */
+    .table-element[style*="width: 20px"] .table-content,
+    .table-element[style*="width: 21px"] .table-content,
+    .table-element[style*="width: 22px"] .table-content,
+    .table-element[style*="width: 23px"] .table-content,
+    .table-element[style*="width: 24px"] .table-content,
+    .table-element[style*="width: 25px"] .table-content {
+        font-size: 5px;
+        line-height: 1;
+    }
+
+    .table-element[style*="width: 20px"] .table-number,
+    .table-element[style*="width: 21px"] .table-number,
+    .table-element[style*="width: 22px"] .table-number,
+    .table-element[style*="width: 23px"] .table-number,
+    .table-element[style*="width: 24px"] .table-number,
+    .table-element[style*="width: 25px"] .table-number {
+        margin-bottom: 0;
+    }
+
+    .table-element[style*="width: 20px"] .table-capacity,
+    .table-element[style*="width: 21px"] .table-capacity,
+    .table-element[style*="width: 22px"] .table-capacity,
+    .table-element[style*="width: 23px"] .table-capacity,
+    .table-element[style*="width: 24px"] .table-capacity,
+    .table-element[style*="width: 25px"] .table-capacity {
+        display: none; /* Hide capacity text untuk ultra small tables */
+    }
+
+    /* BACKGROUND MATCH MODE INDICATOR */
+    .background-match-mode {
+        border: 2px dashed #3B82F6 !important;
+        background-color: rgba(59, 130, 246, 0.05) !important;
+    }
+
+    .background-match-mode::before {
+        content: "🎯 Background Match Mode";
+        position: absolute;
+        top: -25px;
+        left: 0;
+        background: #3B82F6;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: bold;
+        z-index: 1000;
+    }
 </style>
 @endpush
 
@@ -772,12 +988,7 @@
                     <div class="p-6">
                         <div class="mb-4">
                             <h4 class="text-sm font-medium text-gray-900 mb-2">Layout Preview</h4>
-                            
-                            <!-- Stage -->
-                            <div class="stage-preview">
-                                🎭 PANGGUNG
-                            </div>
-                            
+
                             <!-- Preview Canvas -->
                             <div class="preview-canvas">
                                 @if($sellingMode === 'per_table')
@@ -838,39 +1049,97 @@
                                         $vipCount = collect($customSeats)->where('type', 'VIP')->count();
                                         $regularCount = collect($customSeats)->where('type', 'Regular')->count();
                                         
-                                        $maxX = 0;
-                                        $maxY = 0;
-                                        $minX = PHP_INT_MAX;
-                                        $minY = PHP_INT_MAX;
+                                        $maxX = 0; $maxY = 0; $minX = PHP_INT_MAX; $minY = PHP_INT_MAX;
                                         
                                         foreach ($customSeats as $seat) {
-                                            $maxX = max($maxX, ($seat['x'] ?? 0) + ($seat['width'] ?? 44));
-                                            $maxY = max($maxY, ($seat['y'] ?? 0) + ($seat['height'] ?? 44));
+                                            // FIXED: Gunakan width/height sebenarnya, bukan default 44
+                                            $actualWidth = (int) ($seat['width'] ?? 15);  // Default kecil, bukan 44
+                                            $actualHeight = (int) ($seat['height'] ?? 15); // Default kecil, bukan 44
+                                            
+                                            $maxX = max($maxX, ($seat['x'] ?? 0) + $actualWidth);
+                                            $maxY = max($maxY, ($seat['y'] ?? 0) + $actualHeight);
                                             $minX = min($minX, $seat['x'] ?? 0);
                                             $minY = min($minY, $seat['y'] ?? 0);
                                         }
                                         
-                                        $scaleX = count($customSeats) > 0 ? 280 / max(1, $maxX - $minX) : 1;
-                                        $scaleY = count($customSeats) > 0 ? 160 / max(1, $maxY - $minY) : 1;
-                                        $scale = min($scaleX, $scaleY, 1);
+                                        // PERBAIKAN: Improved scaling untuk mempertahankan proporsi asli
+                                        if (count($customSeats) > 0) {
+                                            $contentWidth = max(1, $maxX - $minX);
+                                            $contentHeight = max(1, $maxY - $minY);
+                                            
+                                            $availableWidth = 260;
+                                            $availableHeight = 140;
+                                            
+                                            $scaleX = $availableWidth / $contentWidth;
+                                            $scaleY = $availableHeight / $contentHeight;
+                                            $scale = min($scaleX, $scaleY);
+                                            
+                                            // IMPORTANT: Jangan paksa minimum size di preview
+                                            // Biarkan elemen kecil tetap proporsional
+                                            $minPreviewSize = 4; // Sangat kecil untuk preview
+                                            
+                                            // Check if any element would be too small
+                                            $anyTooSmall = false;
+                                            foreach ($customSeats as $seat) {
+                                                $actualWidth = (int) ($seat['width'] ?? 15);
+                                                $scaledWidth = $actualWidth * $scale;
+                                                if ($scaledWidth < $minPreviewSize) {
+                                                    $anyTooSmall = true;
+                                                    break;
+                                                }
+                                            }
+                                            
+                                            // If elements would be too small, adjust scale
+                                            if ($anyTooSmall) {
+                                                // Find the smallest element and scale based on it
+                                                $smallestWidth = PHP_INT_MAX;
+                                                foreach ($customSeats as $seat) {
+                                                    $actualWidth = (int) ($seat['width'] ?? 15);
+                                                    $smallestWidth = min($smallestWidth, $actualWidth);
+                                                }
+                                                $scale = max($scale, $minPreviewSize / $smallestWidth);
+                                            }
+                                            
+                                            // Limit maximum scale
+                                            $scale = min($scale, 3.0); // Maximum 300% untuk visibility
+                                            
+                                        } else {
+                                            $scale = 1;
+                                            $minX = 0; $minY = 0;
+                                        }
                                     @endphp
                                     
                                     @foreach($customSeats as $seat)
                                         @php
-                                            $x = (($seat['x'] ?? 0) - $minX) * $scale + 10;
+                                            // FIXED: Gunakan ukuran sebenarnya dari metadata
+                                            $actualWidth = (int) ($seat['width'] ?? 15);
+                                            $actualHeight = (int) ($seat['height'] ?? 15);
+                                            
+                                            $x = (($seat['x'] ?? 0) - $minX) * $scale + 20;
                                             $y = (($seat['y'] ?? 0) - $minY) * $scale + 20;
-                                            $width = ($seat['width'] ?? 44) * $scale;
-                                            $height = ($seat['height'] ?? 44) * $scale;
+                                            
+                                            // PERBAIKAN: Scale berdasarkan ukuran sebenarnya
+                                            $width = max($actualWidth * $scale, 4); // Min 4px untuk visibility
+                                            $height = max($actualHeight * $scale, 4); // Min 4px untuk visibility
+                                            
                                             $type = strtolower($seat['type'] ?? 'regular');
-                                            $number = $seat['number'] ?? $seat['id'] ?? $loop->index + 1;
+                                            $number = $seat['number'] ?? $seat['id'] ?? ($loop->index + 1);
+                                            
+                                            // Font size berdasarkan ukuran scaled
+                                            $fontSize = max(4, min(8, $width * 0.3)); // Dynamic font size
                                         @endphp
                                         
                                         <div class="preview-element preview-seat {{ $type }}"
-                                             style="left: {{ $x }}px; top: {{ $y }}px; width: {{ $width }}px; height: {{ $height }}px;"
-                                             title="{{ ucfirst($type) }} - {{ $number }}">
-                                            {{ is_numeric($number) ? $number : substr($number, -2) }}
+                                            style="left: {{ $x }}px; top: {{ $y }}px; width: {{ $width }}px; height: {{ $height }}px; font-size: {{ $fontSize }}px;"
+                                            title="{{ ucfirst($type) }} - {{ $number }} ({{ $actualWidth }}x{{ $actualHeight }}px)">
+                                            @if($width >= 8)
+                                                {{ is_numeric($number) ? $number : substr($number, -2) }}
+                                            @else
+                                                •
+                                            @endif
                                         </div>
                                     @endforeach
+
                                     
                                     @if(empty($customSeats))
                                         <div class="flex items-center justify-center h-full text-gray-400 text-xs">
@@ -991,7 +1260,7 @@
                 <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20">
                     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" wire:click="closeModal"></div>
 
-                    <div class="relative bg-white rounded-lg shadow-xl transform transition-all w-full max-w-7xl max-h-[90vh] overflow-hidden">
+                    <div class="relative bg-white rounded-lg shadow-xl transform transition-all w-full max-w-7xl max-h-[90vh] overflow-y-auto">
                         <form wire:submit.prevent="saveLayout" class="h-full flex flex-col">
                             <!-- Header -->
                             <div class="bg-white px-6 py-4 border-b border-gray-200">
@@ -1010,7 +1279,7 @@
                             <!-- Content -->
                             <div class="flex-1 flex overflow-hidden">
                                 <!-- Settings Sidebar -->
-                                <div class="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+                                <div class="w-96 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
                                     <div class="space-y-6">
                                         <!-- Layout Name -->
                                         <div>
@@ -1106,27 +1375,64 @@
 
                                         <!-- Background Image -->
                                         <div>
-                                            <h4 class="text-sm font-medium text-gray-900 mb-3">Background Image</h4>
-                                            <div class="space-y-2">
-                                                <input type="file" 
-                                                       id="background_image" 
-                                                       accept="image/*"
-                                                       onchange="SeatLayoutManager.handleBackgroundUpload(this)"
-                                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                                <div class="flex space-x-2">
-                                                    <button type="button" 
-                                                            onclick="SeatLayoutManager.removeBackground()"
-                                                            class="flex-1 px-2 py-1 border border-red-300 rounded text-xs text-red-600 hover:bg-red-50">
-                                                        Hapus
-                                                    </button>
-                                                    <button type="button" 
-                                                            onclick="SeatLayoutManager.toggleBackgroundOpacity()"
-                                                            class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50">
-                                                        Opacity
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+    <h4 class="text-sm font-medium text-gray-900 mb-3">Background Image</h4>
+    <div class="space-y-3">
+        
+        <!-- Current Background Display -->
+        @if($current_background_image)
+            <div class="mb-3">
+                <div class="relative">
+                    <img src="{{ $current_background_image }}" 
+                         alt="Background preview" 
+                         class="w-full h-20 object-cover rounded border">
+                    <button type="button" 
+                            wire:click="removeBackgroundImage"
+                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                        ×
+                    </button>
+                </div>
+                <p class="text-xs text-green-600 mt-1">✅ Background image active</p>
+            </div>
+        @endif
+        
+        <!-- Upload Form -->
+        <div>
+            <label for="background_image_upload" class="block text-xs font-medium text-gray-700 mb-1">
+                {{ $current_background_image ? 'Replace Background' : 'Upload Background' }}
+            </label>
+            <input type="file" 
+                   wire:model="background_image"
+                   id="background_image_upload"
+                   accept="image/*"
+                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            
+            @error('background_image') 
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p> 
+            @enderror
+            
+            <div wire:loading wire:target="background_image" class="mt-2">
+                <div class="flex items-center text-xs text-blue-600">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading...
+                </div>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="bg-blue-50 rounded p-2">
+            <p class="text-xs text-blue-600">
+                <strong>💡 Info:</strong> Background image akan ditampilkan dengan opacity 60% dan fit contain.
+            </p>
+            <div class="mt-1 text-xs text-blue-500">
+                • Max size: 5MB<br>
+                • Formats: JPG, PNG, GIF
+            </div>
+        </div>
+    </div>
+</div>
 
                                         <!-- Pricing -->
                                         <div>
@@ -1170,7 +1476,7 @@
                                             </span>
                                         </button>
                                     </div>
-                                    <div class="p-6 flex-1">
+                                    <div class="p-6 basis-1/3 flex-1">
                                         <div class="mb-4">
                                             <h4 class="text-sm font-medium text-gray-900 mb-2">Layout Designer</h4>
                                             <p class="text-xs text-gray-500 mb-4" id="canvas-instruction">
@@ -1186,21 +1492,26 @@
                                         </div>
 
                                         <!-- Canvas Area -->
-                                        <div class="relative bg-white border-2 border-gray-300 rounded-lg overflow-hidden shadow-inner"
-                                             id="seat-canvas"
-                                             style="height: 500px; width: 100%; min-height: 500px;">
+                                        <div class="relative  bg-white border-2 border-gray-300 rounded-lg overflow-hidden shadow-inner"
+                                            id="seat-canvas"
+                                            style="height: 550px; width: 100%; min-height: 550px;">
                                             
                                             <!-- Zoom Controls -->
-                                            <div class="zoom-controls">
+                                            {{-- <div class="zoom-controls">
                                                 <button class="zoom-btn" onclick="SeatLayoutManager.zoomOut()" title="Zoom Out">-</button>
                                                 <div class="zoom-level" id="zoom-level">100%</div>
                                                 <button class="zoom-btn" onclick="SeatLayoutManager.zoomIn()" title="Zoom In">+</button>
                                                 <button class="zoom-btn" onclick="SeatLayoutManager.resetZoom()" title="Reset Zoom">⌂</button>
-                                            </div>
+                                            </div> --}}
                                             
-                                            <!-- Background Image Container -->
+                                            <!-- Background Image Container - Simple Version -->
                                             <div id="background-image-container" class="absolute inset-0 z-0 pointer-events-none">
-                                                <!-- Background image will be inserted here -->
+                                                @if($current_background_image)
+                                                    <img id="background-image" 
+                                                        src="{{ $current_background_image }}" 
+                                                        alt="Layout background"
+                                                        style="width: 100%; height: 100%; object-fit: contain; opacity: 0.6;">
+                                                @endif
                                             </div>
                                             
                                             <!-- Zoom Container -->
@@ -1276,10 +1587,11 @@ window.SeatLayoutManager = {
     selectedElements: [],
     
     // Grid settings
-    gridSize: 20,
+    gridSize: 5,
     snapToGrid: true,
     
     // Background image
+    backgroundImage: null,
     backgroundOpacity: 0.3,
     
     // Event handlers
@@ -1293,10 +1605,20 @@ window.SeatLayoutManager = {
     currentTableShape: 'square',
     
     // Resize settings
-    minSeatSize: 32,
-    maxSeatSize: 80,
-    minTableSize: 60,
-    maxTableSize: 200,
+    minSeatSize: 12,        // Dikurangi dari 32px ke 12px (ultra small)
+    maxSeatSize: 100,       // Increased for flexibility
+    minTableSize: 20,       // Dikurangi dari 60px ke 20px (ultra small table)
+    maxTableSize: 250,      // Increased for flexibility
+    
+    // Default sizes yang bisa disesuaikan
+    defaultSeatWidth: 15,   // Smaller default (dari 44px)
+    defaultSeatHeight: 15,  // Smaller default (dari 44px)
+    defaultTableWidth: 30,  // Smaller default table (dari 120px)
+    defaultTableHeight: 30, // Smaller default table (dari 120px)
+
+    // NEW: Background matching mode
+    backgroundMatchMode: false,
+    backgroundScale: 1,
     
     // Initialization state
     initialized: false,
@@ -1321,7 +1643,7 @@ window.SeatLayoutManager = {
 loadInitialData() {
         try {
             console.log('📡 Loading initial data...');
-            
+            this.setupSimpleBackground();
             // Safely get data from Livewire if available
             if (window.Livewire && window.Livewire.all().length > 0) {
                 const component = window.Livewire.all()[0];
@@ -1360,50 +1682,85 @@ loadInitialData() {
     },
 
     transformSeatsData(rawSeats) {
-        if (!Array.isArray(rawSeats)) {
-            console.warn('⚠️ Invalid seats data - not an array:', rawSeats);
-            return [];
-        }
+    if (!Array.isArray(rawSeats)) {
+        console.warn('⚠️ Invalid seats data - not an array:', rawSeats);
+        return [];
+    }
 
-        return rawSeats.map((seat, index) => {
-            const transformed = {
-                id: seat.id || `seat_${index + 1}`,
-                x: parseInt(seat.x) || 0,
-                y: parseInt(seat.y) || 0,
-                type: seat.type || 'Regular',
-                row: seat.row || this.generateSeatRow(seat.y || 0),
-                number: seat.number || (index + 1),
-                width: parseInt(seat.width) || 44,
-                height: parseInt(seat.height) || 44
-            };
-            
-            console.log(`🪑 Transformed seat ${index}:`, { original: seat, transformed });
-            return transformed;
+    return rawSeats.map((seat, index) => {
+        // PERBAIKAN: Gunakan ukuran sebenarnya dari server
+        const serverWidth = parseInt(seat.width);
+        const serverHeight = parseInt(seat.height);
+        
+        // Hanya gunakan default jika benar-benar tidak ada data
+        const rawWidth = !isNaN(serverWidth) ? serverWidth : 15;  // Default kecil
+        const rawHeight = !isNaN(serverHeight) ? serverHeight : 15; // Default kecil
+        
+        // PERBAIKAN: Minimum constraint yang realistis untuk ultra small
+        const width = Math.max(rawWidth, this.minSeatSize);   // 12px minimum
+        const height = Math.max(rawHeight, this.minSeatSize); // 12px minimum
+        
+        const transformed = {
+            id: seat.id || `seat_${index + 1}`,
+            x: parseInt(seat.x) || 0,
+            y: parseInt(seat.y) || 0,
+            type: seat.type || 'Regular',
+            row: seat.row || this.generateSeatRow(seat.y || 0),
+            number: seat.number || (index + 1),
+            width: width,
+            height: height
+        };
+        
+        console.log(`🪑 Transformed seat ${index}:`, { 
+            server_data: { width: serverWidth, height: serverHeight },
+            raw_data: { width: rawWidth, height: rawHeight },
+            final_data: { width: transformed.width, height: transformed.height }
         });
-    },
+        
+        return transformed;
+    });
+},
 
     transformTablesData(rawTables) {
-        if (!Array.isArray(rawTables)) {
-            console.warn('⚠️ Invalid tables data - not an array:', rawTables);
-            return [];
-        }
+    if (!Array.isArray(rawTables)) {
+        console.warn('⚠️ Invalid tables data - not an array:', rawTables);
+        return [];
+    }
 
-        return rawTables.map((table, index) => {
-            const transformed = {
-                id: table.id || `table_${index + 1}`,
-                x: parseInt(table.x) || 0,
-                y: parseInt(table.y) || 0,
-                shape: table.shape || 'square',
-                capacity: parseInt(table.capacity) || 4,
-                number: table.number || `T${index + 1}`,
-                width: parseInt(table.width) || 120,
-                height: parseInt(table.height) || 120
-            };
-            
-            console.log(`🍽️ Transformed table ${index}:`, { original: table, transformed });
-            return transformed;
+    return rawTables.map((table, index) => {
+        // PERBAIKAN: Gunakan ukuran sebenarnya dari server
+        const serverWidth = parseInt(table.width);
+        const serverHeight = parseInt(table.height);
+        
+        // Hanya gunakan default jika benar-benar tidak ada data
+        const rawWidth = !isNaN(serverWidth) ? serverWidth : 30;  // Default kecil
+        const rawHeight = !isNaN(serverHeight) ? serverHeight : 30; // Default kecil
+        
+        // PERBAIKAN: Minimum constraint yang realistis untuk ultra small
+        const width = Math.max(rawWidth, this.minTableSize);   // 20px minimum
+        const height = Math.max(rawHeight, this.minTableSize); // 20px minimum
+        
+        const transformed = {
+            id: table.id || `table_${index + 1}`,
+            x: parseInt(table.x) || 0,
+            y: parseInt(table.y) || 0,
+            shape: table.shape || 'square',
+            capacity: parseInt(table.capacity) || 4,
+            number: table.number || `T${index + 1}`,
+            width: width,
+            height: height
+        };
+        
+        console.log(`🍽️ Transformed table ${index}:`, { 
+            server_data: { width: serverWidth, height: serverHeight },
+            raw_data: { width: rawWidth, height: rawHeight },
+            final_data: { width: transformed.width, height: transformed.height }
         });
-    },
+        
+        return transformed;
+    });
+},
+
 
     checkDOMReady() {
         const canvas = document.getElementById('seat-canvas');
@@ -1432,36 +1789,133 @@ loadInitialData() {
         }
     },
 
-    proceedWithInit() {
-        try {
-            console.log('🎯 Proceeding with full initialization...');
-            
-            this.initializeCounters();
-            this.setupCanvas();
-            this.setupModeToggle();
-            this.updateInterface();
-            
-            // FIXED: Always render existing data after interface is ready
-            this.renderAll();
-            
-            this.setupKeyboardShortcuts();
-            this.updateStatistics();
-            
-            // Set default tool
-            this.setTool('select');
-            
-            this.initialized = true;
-            console.log('✅ Enhanced initialization completed successfully!');
-            
-            // Remove any error messages
-            const errorMsg = document.querySelector('div[style*="background: #fee"]');
-            if (errorMsg) errorMsg.remove();
-            
-        } catch (error) {
-            console.error('❌ Error during initialization:', error);
-            this.initialized = false;
-        }
-    },
+    prroceedWithInit() {
+    try {
+        console.log('🎯 Proceeding with full initialization...');
+        
+        this.initializeCounters();
+        this.setupCanvas();
+        this.setupModeToggle();
+        this.setupSimpleBackground(); // ← TAMBAHKAN INI
+        this.updateInterface();
+        
+        // FIXED: Always render existing data after interface is ready
+        this.renderAll();
+        
+        this.setupKeyboardShortcuts();
+        this.updateStatistics();
+        
+        // Set default tool
+        this.setTool('select');
+        
+        this.initialized = true;
+        console.log('✅ Enhanced initialization completed successfully!');
+        
+        // Remove any error messages
+        const errorMsg = document.querySelector('div[style*="background: #fee"]');
+        if (errorMsg) errorMsg.remove();
+        
+    } catch (error) {
+        console.error('❌ Error during initialization:', error);
+        this.initialized = false;
+    }
+},
+
+setupSimpleBackground() {
+    console.log('🖼️ Setting up simple background image');
+    
+    // Load existing background
+    const img = document.getElementById('background-image');
+    if (img) {
+        this.backgroundImage = img.src;
+        console.log('📷 Background image loaded:', this.backgroundImage);
+    }
+},
+
+
+
+// Tambahkan ke dalam object window.SeatLayoutManager yang sudah ada
+
+// Background Image Properties - Simple Version
+backgroundImage: null,
+
+// Update method proceedWithInit() - tambahkan background setup
+proceedWithInit() {
+    try {
+        console.log('🎯 Proceeding with full initialization...');
+        
+        this.initializeCounters();
+        this.setupCanvas();
+        this.setupModeToggle();
+        this.setupSimpleBackground(); // ← TAMBAHKAN INI
+        this.updateInterface();
+        
+        // FIXED: Always render existing data after interface is ready
+        this.renderAll();
+        
+        this.setupKeyboardShortcuts();
+        this.updateStatistics();
+        
+        // Set default tool
+        this.setTool('select');
+        
+        this.initialized = true;
+        console.log('✅ Enhanced initialization completed successfully!');
+        
+        // Remove any error messages
+        const errorMsg = document.querySelector('div[style*="background: #fee"]');
+        if (errorMsg) errorMsg.remove();
+        
+    } catch (error) {
+        console.error('❌ Error during initialization:', error);
+        this.initialized = false;
+    }
+},
+
+// TAMBAHKAN METHOD BARU - Simple Background Setup
+setupSimpleBackground() {
+    console.log('🖼️ Setting up simple background image');
+    
+    // Load existing background
+    const img = document.getElementById('background-image');
+    if (img) {
+        this.backgroundImage = img.src;
+        console.log('📷 Background image loaded:', this.backgroundImage);
+    }
+},
+
+setSimpleBackground(imageUrl) {
+    console.log('🖼️ Setting simple background image:', imageUrl);
+    
+    this.backgroundImage = imageUrl;
+    
+    const container = document.getElementById('background-image-container');
+    if (container && imageUrl) {
+        container.innerHTML = `
+            <img id="background-image" 
+                 src="${imageUrl}" 
+                 alt="Layout background"
+                 style="width: 100%; height: 100%; object-fit: contain; opacity: 0.6;">
+        `;
+        console.log('✅ Background image set');
+    } else if (container) {
+        container.innerHTML = '';
+        console.log('🗑️ Background image cleared');
+    }
+},
+
+removeSimpleBackground() {
+    console.log('🗑️ Removing background image');
+    
+    this.backgroundImage = null;
+    
+    const container = document.getElementById('background-image-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    
+    console.log('✅ Background image removed');
+},
 
     initializeCounters() {
         try {
@@ -1875,9 +2329,13 @@ loadInitialData() {
         }
     },
 
-    createSeat(type, x, y, tableId = null, width = 44, height = 44) {
+    createSeat(type, x, y, tableId = null, width = null, height = null) {
         this.seatCounter++;
-        console.log('🪑 Creating seat:', { type, x, y, counter: this.seatCounter });
+        console.log('🪑 Creating ultra-small seat:', { type, x, y, counter: this.seatCounter });
+        
+        // PERBAIKAN: Support ultra small sizes
+        const seatWidth = Math.max(width || this.defaultSeatWidth, this.minSeatSize);
+        const seatHeight = Math.max(height || this.defaultSeatHeight, this.minSeatSize);
         
         const seat = {
             id: 'seat_' + this.seatCounter,
@@ -1887,15 +2345,15 @@ loadInitialData() {
             row: this.generateSeatRow(y),
             number: this.seatCounter,
             table_id: tableId,
-            width: width,
-            height: height
+            width: seatWidth,
+            height: seatHeight
         };
         
         this.seats.push(seat);
         this.renderSeat(seat);
         this.updateStatistics();
         
-        console.log('✅ Seat created successfully');
+        console.log('✅ Ultra-small seat created:', { width: seatWidth, height: seatHeight });
     },
 
     createTable(x, y, shape = 'square') {
@@ -1984,67 +2442,121 @@ loadInitialData() {
     },
 
      renderTable(table) {
-        const container = document.getElementById('elements-container');
-        if (!container) {
-            console.error('❌ Cannot render table - container not found');
-            return;
-        }
+    const container = document.getElementById('elements-container');
+    if (!container) {
+        console.error('❌ Cannot render table - container not found');
+        return;
+    }
 
-        const element = document.createElement('div');
-        
-        element.className = `table-element shape-${table.shape || 'square'}`;
-        element.style.left = (table.x || 0) + 'px';
-        element.style.top = (table.y || 0) + 'px';
-        element.style.width = (table.width || 120) + 'px';
-        element.style.height = (table.height || 120) + 'px';
-        element.dataset.tableId = table.id;
-        
-        // Apply rotation for diamond shape
-        if (table.shape === 'diamond') {
-            element.style.transform = 'rotate(45deg)';
-        }
-        
-        element.innerHTML = `
-            <div class="table-content">
-                <div class="table-number">${table.number || 'T1'}</div>
-                <div class="table-capacity">${table.capacity || 4} kursi</div>
-            </div>
-            ${this.createResizeHandles()}
-        `;
-        
-        this.makeTableInteractive(element);
-        container.appendChild(element);
-        
-        console.log('✅ Table rendered:', table.id);
-    },
+    // PERBAIKAN: Gunakan ukuran dari table data, JANGAN override
+    const width = table.width || this.defaultTableWidth;
+    const height = table.height || this.defaultTableHeight;
+    
+    // Hanya validate minimum, jangan ubah ukuran yang sudah valid
+    const finalWidth = Math.max(width, this.minTableSize);
+    const finalHeight = Math.max(height, this.minTableSize);
+    
+    // Update table object HANYA jika ada perubahan
+    if (finalWidth !== width || finalHeight !== height) {
+        console.warn(`⚠️ Table ${table.id} size adjusted:`, {
+            original: { width, height },
+            final: { width: finalWidth, height: finalHeight }
+        });
+        table.width = finalWidth;
+        table.height = finalHeight;
+    }
+
+    const element = document.createElement('div');
+    
+    element.className = `table-element shape-${table.shape || 'square'}`;
+    element.style.left = (table.x || 0) + 'px';
+    element.style.top = (table.y || 0) + 'px';
+    element.style.width = finalWidth + 'px';
+    element.style.height = finalHeight + 'px';
+    element.dataset.tableId = table.id;
+    
+    // Apply rotation for diamond shape
+    if (table.shape === 'diamond') {
+        element.style.transform = 'rotate(45deg)';
+    }
+    
+    // Dynamic font size based on actual element size
+    const fontSize = this.calculateFontSize(finalWidth, 'table');
+    element.style.fontSize = fontSize + 'px';
+    
+    element.innerHTML = `
+        <div class="table-content">
+            <div class="table-number">${table.number || 'T1'}</div>
+            <div class="table-capacity">${table.capacity || 4} kursi</div>
+        </div>
+        ${this.createResizeHandles()}
+    `;
+    
+    this.makeTableInteractive(element);
+    container.appendChild(element);
+    
+    console.log('✅ Table rendered with preserved size:', { 
+        id: table.id, 
+        width: finalWidth, 
+        height: finalHeight,
+        fontSize: fontSize 
+    });
+},
 
     renderSeat(seat) {
-        const container = document.getElementById('elements-container');
-        if (!container) {
-            console.error('❌ Cannot render seat - container not found');
-            return;
-        }
+    const container = document.getElementById('elements-container');
+    if (!container) {
+        console.error('❌ Cannot render seat - container not found');
+        return;
+    }
 
-        const element = document.createElement('div');
-        const isTableSeat = seat.table_id !== null && seat.table_id !== undefined;
-        
-        element.className = `seat-element ${(seat.type || 'regular').toLowerCase()} ${isTableSeat ? 'table-seat' : ''}`;
-        element.style.left = (seat.x || 0) + 'px';
-        element.style.top = (seat.y || 0) + 'px';
-        element.style.width = (seat.width || 44) + 'px';
-        element.style.height = (seat.height || 44) + 'px';
-        element.dataset.seatId = seat.id;
-        
-        element.innerHTML = `
-            <span>${seat.number || 1}</span>
-            ${this.createResizeHandles()}
-        `;
-        
-        this.makeSeatInteractive(element);
-        container.appendChild(element);
-        
-        console.log('✅ Seat rendered:', seat.id);
-    },
+    // PERBAIKAN: Gunakan ukuran dari seat data, JANGAN override
+    const width = seat.width || this.defaultSeatWidth;
+    const height = seat.height || this.defaultSeatHeight;
+    
+    // Hanya validate minimum, jangan ubah ukuran yang sudah valid
+    const finalWidth = Math.max(width, this.minSeatSize);
+    const finalHeight = Math.max(height, this.minSeatSize);
+    
+    // Update seat object HANYA jika ada perubahan
+    if (finalWidth !== width || finalHeight !== height) {
+        console.warn(`⚠️ Seat ${seat.id} size adjusted:`, {
+            original: { width, height },
+            final: { width: finalWidth, height: finalHeight }
+        });
+        seat.width = finalWidth;
+        seat.height = finalHeight;
+    }
+
+    const element = document.createElement('div');
+    const isTableSeat = seat.table_id !== null && seat.table_id !== undefined;
+    
+    element.className = `seat-element ${(seat.type || 'regular').toLowerCase()} ${isTableSeat ? 'table-seat' : ''}`;
+    element.style.left = (seat.x || 0) + 'px';
+    element.style.top = (seat.y || 0) + 'px';
+    element.style.width = finalWidth + 'px';
+    element.style.height = finalHeight + 'px';
+    element.dataset.seatId = seat.id;
+    
+    // Dynamic font size based on actual element size
+    const fontSize = this.calculateFontSize(finalWidth, 'seat');
+    element.style.fontSize = fontSize + 'px';
+    
+    element.innerHTML = `
+        <span>${seat.number || 1}</span>
+        ${this.createResizeHandles()}
+    `;
+    
+    this.makeSeatInteractive(element);
+    container.appendChild(element);
+    
+    console.log('✅ Seat rendered with preserved size:', { 
+        id: seat.id, 
+        width: finalWidth, 
+        height: finalHeight,
+        fontSize: fontSize 
+    });
+},
 
     reloadDataFromLivewire() {
         console.log('🔄 Reloading data from Livewire...');
@@ -2072,6 +2584,34 @@ loadInitialData() {
             console.error('❌ Error reloading data:', error);
             return false;
         }
+    },
+
+    calculateFontSize(elementWidth, type) {
+        let fontSize;
+        
+        if (type === 'seat') {
+            if (elementWidth <= 35) {
+                fontSize = 9;   // Very small seats
+            } else if (elementWidth <= 44) {
+                fontSize = 11;  // Normal seats
+            } else if (elementWidth <= 60) {
+                fontSize = 12;  // Large seats
+            } else {
+                fontSize = 14;  // Very large seats
+            }
+        } else { // table
+            if (elementWidth <= 70) {
+                fontSize = 9;   // Small tables
+            } else if (elementWidth <= 120) {
+                fontSize = 11;  // Normal tables
+            } else if (elementWidth <= 160) {
+                fontSize = 12;  // Large tables
+            } else {
+                fontSize = 14;  // Very large tables
+            }
+        }
+        
+        return Math.max(fontSize, 8); // Minimum 8px font
     },
 
     forceInitForEdit() {
@@ -2158,7 +2698,7 @@ loadInitialData() {
                 const startLeft = parseInt(element.style.left);
                 const startTop = parseInt(element.style.top);
                 
-                console.log('🔧 Starting resize:', { direction, type });
+                console.log('🔧 Starting ultra-small resize:', { direction, type, startWidth, startHeight });
                 
                 const handleMouseMove = (e) => {
                     const deltaX = e.clientX - startX;
@@ -2169,63 +2709,46 @@ loadInitialData() {
                     let newLeft = startLeft;
                     let newTop = startTop;
                     
-                    // Calculate new dimensions based on direction
+                    // Calculate new dimensions
                     switch (direction) {
-                        case 'se': // Southeast
-                            newWidth = startWidth + deltaX;
-                            newHeight = startHeight + deltaY;
-                            break;
-                        case 'sw': // Southwest
-                            newWidth = startWidth - deltaX;
-                            newHeight = startHeight + deltaY;
-                            newLeft = startLeft + deltaX;
-                            break;
-                        case 'ne': // Northeast
-                            newWidth = startWidth + deltaX;
-                            newHeight = startHeight - deltaY;
-                            newTop = startTop + deltaY;
-                            break;
-                        case 'nw': // Northwest
-                            newWidth = startWidth - deltaX;
-                            newHeight = startHeight - deltaY;
-                            newLeft = startLeft + deltaX;
-                            newTop = startTop + deltaY;
-                            break;
-                        case 'n': // North
-                            newHeight = startHeight - deltaY;
-                            newTop = startTop + deltaY;
-                            break;
-                        case 's': // South
-                            newHeight = startHeight + deltaY;
-                            break;
-                        case 'w': // West
-                            newWidth = startWidth - deltaX;
-                            newLeft = startLeft + deltaX;
-                            break;
-                        case 'e': // East
-                            newWidth = startWidth + deltaX;
-                            break;
+                        case 'se': newWidth = startWidth + deltaX; newHeight = startHeight + deltaY; break;
+                        case 'sw': newWidth = startWidth - deltaX; newHeight = startHeight + deltaY; newLeft = startLeft + deltaX; break;
+                        case 'ne': newWidth = startWidth + deltaX; newHeight = startHeight - deltaY; newTop = startTop + deltaY; break;
+                        case 'nw': newWidth = startWidth - deltaX; newHeight = startHeight - deltaY; newLeft = startLeft + deltaX; newTop = startTop + deltaY; break;
+                        case 'n': newHeight = startHeight - deltaY; newTop = startTop + deltaY; break;
+                        case 's': newHeight = startHeight + deltaY; break;
+                        case 'w': newWidth = startWidth - deltaX; newLeft = startLeft + deltaX; break;
+                        case 'e': newWidth = startWidth + deltaX; break;
                     }
                     
-                    // Apply size constraints
+                    // PERBAIKAN: Ultra small constraints
                     if (type === 'seat') {
-                        // For seats, keep them square
-                        const size = Math.max(this.minSeatSize, Math.min(this.maxSeatSize, Math.min(newWidth, newHeight)));
-                        newWidth = size;
-                        newHeight = size;
+                        // Allow very small seats untuk match background
+                        newWidth = Math.max(this.minSeatSize, Math.min(this.maxSeatSize, newWidth));
+                        newHeight = Math.max(this.minSeatSize, Math.min(this.maxSeatSize, newHeight));
+                        
+                        // Keep seats roughly square
+                        const avgSize = (newWidth + newHeight) / 2;
+                        newWidth = avgSize;
+                        newHeight = avgSize;
                     } else {
-                        // For tables, apply min/max constraints
+                        // Allow small tables
                         newWidth = Math.max(this.minTableSize, Math.min(this.maxTableSize, newWidth));
                         newHeight = Math.max(this.minTableSize, Math.min(this.maxTableSize, newHeight));
                     }
                     
-                    // Apply grid snapping if enabled
+                    // Fine-grained grid snapping for small elements
                     if (this.snapToGrid) {
-                        newLeft = Math.round(newLeft / this.gridSize) * this.gridSize;
-                        newTop = Math.round(newTop / this.gridSize) * this.gridSize;
-                        newWidth = Math.round(newWidth / this.gridSize) * this.gridSize;
-                        newHeight = Math.round(newHeight / this.gridSize) * this.gridSize;
+                        const gridSize = newWidth < 20 ? 2 : this.gridSize; // Smaller grid for small elements
+                        newLeft = Math.round(newLeft / gridSize) * gridSize;
+                        newTop = Math.round(newTop / gridSize) * gridSize;
+                        newWidth = Math.round(newWidth / gridSize) * gridSize;
+                        newHeight = Math.round(newHeight / gridSize) * gridSize;
                     }
+                    
+                    // Ensure minimum after grid snapping
+                    newWidth = Math.max(newWidth, this.minSeatSize);
+                    newHeight = Math.max(newHeight, this.minSeatSize);
                     
                     // Update element styles
                     element.style.width = newWidth + 'px';
@@ -2233,50 +2756,188 @@ loadInitialData() {
                     element.style.left = newLeft + 'px';
                     element.style.top = newTop + 'px';
                     
+                    // Update font size for very small elements
+                    this.updateElementFontSize(element, newWidth, type);
+                    
                     // Update data
                     if (type === 'table') {
                         const table = this.tables.find(t => t.id === element.dataset.tableId);
                         if (table) {
-                            table.width = newWidth;
-                            table.height = newHeight;
-                            table.x = newLeft;
-                            table.y = newTop;
+                            table.width = newWidth; table.height = newHeight;
+                            table.x = newLeft; table.y = newTop;
                         }
                     } else {
                         const seat = this.seats.find(s => s.id === element.dataset.seatId);
                         if (seat) {
-                            seat.width = newWidth;
-                            seat.height = newHeight;
-                            seat.x = newLeft;
-                            seat.y = newTop;
+                            seat.width = newWidth; seat.height = newHeight;
+                            seat.x = newLeft; seat.y = newTop;
                         }
                     }
+                    
+                    console.log(`📏 Ultra-small resize ${type}:`, { width: newWidth, height: newHeight });
                 };
                 
                 const handleMouseUp = () => {
                     document.removeEventListener('mousemove', handleMouseMove);
                     document.removeEventListener('mouseup', handleMouseUp);
                     document.body.style.cursor = 'default';
-                    console.log('✅ Resize completed');
+                    console.log('✅ Ultra-small resize completed');
                 };
-                
-                // Set cursor for resize direction
-                const cursorMap = {
-                    'nw': 'nw-resize',
-                    'ne': 'ne-resize',
-                    'sw': 'sw-resize',
-                    'se': 'se-resize',
-                    'n': 'n-resize',
-                    's': 's-resize',
-                    'w': 'w-resize',
-                    'e': 'e-resize'
-                };
-                document.body.style.cursor = cursorMap[direction] || 'default';
                 
                 document.addEventListener('mousemove', handleMouseMove);
                 document.addEventListener('mouseup', handleMouseUp);
             });
         });
+    },
+
+    updateElementFontSize(element, width, type) {
+        let fontSize;
+        
+        if (type === 'seat') {
+            if (width <= 15) {
+                fontSize = 6;   // Ultra small: 6px
+                element.innerHTML = '<span>•</span>'; // Gunakan dot untuk ultra small
+            } else if (width <= 20) {
+                fontSize = 7;   // Very small: 7px
+            } else if (width <= 30) {
+                fontSize = 8;   // Small: 8px
+            } else if (width <= 44) {
+                fontSize = 10;  // Normal: 10px
+            } else {
+                fontSize = 12;  // Large: 12px
+            }
+        } else { // table
+            if (width <= 25) {
+                fontSize = 6;   // Ultra small table
+                element.querySelector('.table-content').innerHTML = '<div style="font-size: 6px;">T</div>';
+            } else if (width <= 40) {
+                fontSize = 7;   // Small table
+            } else if (width <= 60) {
+                fontSize = 8;   // Medium table
+            } else {
+                fontSize = 10;  // Large table
+            }
+        }
+        
+        element.style.fontSize = fontSize + 'px';
+        
+        // Update resize handles size for ultra small elements
+        const handles = element.querySelectorAll('.resize-handle');
+        handles.forEach(handle => {
+            if (width <= 20) {
+                handle.style.width = '4px';
+                handle.style.height = '4px';
+                handle.style.opacity = '0.9'; // More visible for small elements
+            } else {
+                handle.style.width = '8px';
+                handle.style.height = '8px';
+                handle.style.opacity = '';
+            }
+        });
+    },
+
+    enableBackgroundMatchMode() {
+        this.backgroundMatchMode = true;
+        console.log('🎯 Background match mode enabled');
+        
+        // Adjust defaults untuk match background
+        this.defaultSeatWidth = 12;
+        this.defaultSeatHeight = 12;
+        this.defaultTableWidth = 25;
+        this.defaultTableHeight = 25;
+        
+        // Update UI untuk show match mode
+        this.showBackgroundMatchTools();
+    },
+
+    disableBackgroundMatchMode() {
+        this.backgroundMatchMode = false;
+        console.log('🔄 Background match mode disabled');
+        
+        // Reset ke default normal
+        this.defaultSeatWidth = 44;
+        this.defaultSeatHeight = 44;
+        this.defaultTableWidth = 120;
+        this.defaultTableHeight = 120;
+        
+        this.hideBackgroundMatchTools();
+    },
+
+    showBackgroundMatchTools() {
+        const toolsContainer = document.getElementById('quick-actions');
+        if (toolsContainer) {
+            const matchTools = `
+                <div class="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
+                    <h5 class="text-sm font-semibold text-blue-900 mb-2">🎯 Background Match Mode</h5>
+                    <div class="space-y-2">
+                        <button type="button" onclick="SeatLayoutManager.createMatchingSeat()" 
+                                class="w-full px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+                            Add Matching Seat (12px)
+                        </button>
+                        <button type="button" onclick="SeatLayoutManager.createMatchingTable()" 
+                                class="w-full px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600">
+                            Add Matching Table (25px)
+                        </button>
+                        <button type="button" onclick="SeatLayoutManager.scaleAllToBackground()" 
+                                class="w-full px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
+                            Scale All Elements
+                        </button>
+                        <button type="button" onclick="SeatLayoutManager.disableBackgroundMatchMode()" 
+                                class="w-full px-3 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600">
+                            Exit Match Mode
+                        </button>
+                    </div>
+                </div>
+            `;
+            toolsContainer.insertAdjacentHTML('beforeend', matchTools);
+        }
+    },
+
+    hideBackgroundMatchTools() {
+        const matchTools = document.querySelector('.bg-blue-50');
+        if (matchTools) matchTools.remove();
+    },
+
+
+
+    createMatchingSeat() {
+        // Create seat dengan ukuran yang match background
+        this.setTool('regular');
+        this.defaultSeatWidth = 12;
+        this.defaultSeatHeight = 12;
+        
+        // Add instruction
+        alert('Klik di canvas untuk menambah kursi ukuran 12px (sesuai background). Anda bisa resize lebih besar/kecil setelahnya.');
+    },
+
+    createMatchingTable() {
+        // Create table dengan ukuran yang match background  
+        this.setTool('table');
+        this.defaultTableWidth = 25;
+        this.defaultTableHeight = 25;
+        
+        alert('Klik di canvas untuk menambah meja ukuran 25px (sesuai background). Anda bisa resize setelahnya.');
+    },
+
+     scaleAllToBackground() {
+        const scaleFactor = 0.3; // Scale down to 30% of current size
+        
+        // Scale all seats
+        this.seats.forEach(seat => {
+            seat.width = Math.max(Math.round(seat.width * scaleFactor), this.minSeatSize);
+            seat.height = Math.max(Math.round(seat.height * scaleFactor), this.minSeatSize);
+        });
+        
+        // Scale all tables
+        this.tables.forEach(table => {
+            table.width = Math.max(Math.round(table.width * scaleFactor), this.minTableSize);
+            table.height = Math.max(Math.round(table.height * scaleFactor), this.minTableSize);
+        });
+        
+        // Re-render all
+        this.renderAll();
+        
+        console.log('✅ All elements scaled to match background');
     },
 
     makeDraggable(element, type) {
@@ -2665,7 +3326,7 @@ loadInitialData() {
 
     // Validation method to check if layout has valid data
     validateLayout() {
-        console.log('🔍 Validating layout data...');
+        console.log('🔍 Validating layout data with size constraints...');
         
         const errors = [];
         
@@ -2681,16 +3342,27 @@ loadInitialData() {
                 console.error('❌ No tables found in per_table mode');
             }
             
-            // Validate each table
+            // PERBAIKAN: Validate table dimensions
             this.tables.forEach((table, index) => {
                 if (!table.x && table.x !== 0 || !table.y && table.y !== 0) {
                     errors.push(`Meja ${index + 1} tidak memiliki posisi yang valid`);
                 }
+                
+                // Validate minimum size
+                if ((table.width || 0) < this.minTableSize) {
+                    console.warn(`⚠️ Table ${index + 1} width too small, will be adjusted to minimum`);
+                    table.width = this.minTableSize;
+                }
+                if ((table.height || 0) < this.minTableSize) {
+                    console.warn(`⚠️ Table ${index + 1} height too small, will be adjusted to minimum`);
+                    table.height = this.minTableSize;
+                }
             });
             
-            console.log('📊 Table validation:', {
+            console.log('📊 Table validation with size constraints:', {
                 tables_count: this.tables.length,
-                tables_data: this.tables.slice(0, 2) // Log the first 2 tables
+                min_table_size: this.minTableSize,
+                tables_data: this.tables.slice(0, 2)
             });
         } else {
             if (this.seats.length === 0) {
@@ -2698,7 +3370,7 @@ loadInitialData() {
                 console.error('❌ No seats found in per_seat mode');
             }
             
-            // Validate each seat
+            // PERBAIKAN: Validate seat dimensions
             this.seats.forEach((seat, index) => {
                 if (!seat.x && seat.x !== 0 || !seat.y && seat.y !== 0) {
                     errors.push(`Kursi ${index + 1} tidak memiliki posisi yang valid`);
@@ -2706,11 +3378,22 @@ loadInitialData() {
                 if (!seat.type || !['Regular', 'VIP'].includes(seat.type)) {
                     errors.push(`Kursi ${index + 1} tipe tidak valid`);
                 }
+                
+                // Validate minimum size
+                if ((seat.width || 0) < this.minSeatSize) {
+                    console.warn(`⚠️ Seat ${index + 1} width too small, will be adjusted to minimum`);
+                    seat.width = this.minSeatSize;
+                }
+                if ((seat.height || 0) < this.minSeatSize) {
+                    console.warn(`⚠️ Seat ${index + 1} height too small, will be adjusted to minimum`);
+                    seat.height = this.minSeatSize;
+                }
             });
             
-            console.log('📊 Seat validation:', {
+            console.log('📊 Seat validation with size constraints:', {
                 seats_count: this.seats.length,
-                seats_data: this.seats.slice(0, 2) // Log the first 2 seats
+                min_seat_size: this.minSeatSize,
+                seats_data: this.seats.slice(0, 2)
             });
         }
         
@@ -2720,7 +3403,7 @@ loadInitialData() {
             return false;
         }
         
-        console.log('✅ Layout validation passed');
+        console.log('✅ Layout validation passed with size constraints applied');
         return true;
     },
 
@@ -2956,25 +3639,57 @@ document.addEventListener('livewire:initialized', () => {
     console.log('⚡ Livewire initialized');
     
     // FIXED: Listen for layout data loaded event
-    Livewire.on('layout-data-loaded', (data) => {
+
+   Livewire.on('background-uploaded', (data) => {
+        console.log('📷 Background uploaded:', data);
+        if (window.SeatLayoutManager && data[0]?.url) {
+            SeatLayoutManager.setSimpleBackground(data[0].url);
+        }
+    });
+
+    Livewire.on('background-removed', () => {
+        console.log('📷 Background removed');
+        if (window.SeatLayoutManager) {
+            SeatLayoutManager.removeSimpleBackground();
+        }
+    });
+
+ Livewire.on('layout-data-loaded', (data) => {
         console.log('📡 Layout data loaded event received:', data);
         
         if (window.SeatLayoutManager) {
-            // Update SeatLayoutManager with new data
+            // PERBAIKAN: Load data dengan preserving ukuran asli
             SeatLayoutManager.sellingMode = data[0].selling_mode;
-            SeatLayoutManager.seats = data[0].custom_seats || [];
-            SeatLayoutManager.tables = data[0].tables || [];
             
-            console.log('📊 Data updated in SeatLayoutManager:', {
+            // Transform data TANPA memaksa ukuran default
+            const rawSeats = data[0].custom_seats || [];
+            const rawTables = data[0].tables || [];
+            
+            console.log('📊 Raw data from server:', {
+                seats_raw: rawSeats.slice(0, 2),
+                tables_raw: rawTables.slice(0, 2)
+            });
+            
+            SeatLayoutManager.seats = SeatLayoutManager.transformSeatsData(rawSeats);
+            SeatLayoutManager.tables = SeatLayoutManager.transformTablesData(rawTables);
+
+            // Load background image
+            if (data[0].background_image) {
+                SeatLayoutManager.setSimpleBackground(data[0].background_image);
+            }
+            
+            console.log('📊 Final transformed data:', {
                 mode: SeatLayoutManager.sellingMode,
                 seats: SeatLayoutManager.seats.length,
-                tables: SeatLayoutManager.tables.length
+                tables: SeatLayoutManager.tables.length,
+                seats_sizes: SeatLayoutManager.seats.slice(0, 3).map(s => ({ width: s.width, height: s.height })),
+                tables_sizes: SeatLayoutManager.tables.slice(0, 3).map(t => ({ width: t.width, height: t.height }))
             });
             
             // Wait for modal to be fully rendered, then initialize
             setTimeout(() => {
                 if (document.getElementById('seat-canvas')) {
-                    console.log('🔄 Initializing SeatLayoutManager for edit mode...');
+                    console.log('🔄 Initializing SeatLayoutManager for edit mode with preserved sizes...');
                     SeatLayoutManager.forceInitForEdit();
                 } else {
                     console.warn('⚠️ Canvas not found after data load event');
@@ -3114,6 +3829,20 @@ window.testCreateTable = function() {
     if (window.SeatLayoutManager) {
         SeatLayoutManager.createTable(200, 200, 'square');
         console.log('✅ Test table created');
+    }
+};
+
+window.testBackground = function(imageUrl) {
+    if (window.SeatLayoutManager) {
+        SeatLayoutManager.setSimpleBackground(imageUrl || 'https://via.placeholder.com/800x600/cccccc/666666?text=Test+Background');
+        console.log('🧪 Test background set');
+    }
+};
+
+window.clearBackground = function() {
+    if (window.SeatLayoutManager) {
+        SeatLayoutManager.removeSimpleBackground();
+        console.log('🧪 Test background cleared');
     }
 };
 

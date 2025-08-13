@@ -7,11 +7,13 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Layout;
 
 class EventManagement extends Component
 {
     use WithPagination, WithFileUploads;
-
+    #[Layout('layouts.admin')]
+    
     public $event_name = '';
     public $event_description = '';
     public $venue_name = '';

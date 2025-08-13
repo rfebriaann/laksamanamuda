@@ -73,11 +73,11 @@
                 @endif
 
                 <!-- Stage -->
-                <div class="text-center mb-6">
+                {{-- <div class="text-center mb-6">
                     <div class="inline-block bg-gray-800 text-white px-8 py-4 rounded-lg">
                         <h2 class="text-xl font-bold">🎭 PANGGUNG</h2>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- Seat Map -->
                 @if($selectedLayout)
@@ -93,63 +93,98 @@
                     </div>
 
                     <!-- Seat Canvas -->
-                    <div class="relative bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg min-h-96 overflow-auto"
-                         style="background-image: linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px); background-size: 20px 20px;">
-                        
-                        @if($sellingMode === 'per_seat')
-                            <!-- Render Seats dari Database -->
-                            @if(isset($selectedLayout['layout_config']['custom_seats']))
-                                @foreach($selectedLayout['layout_config']['custom_seats'] as $seat)
-                                <button wire:click="toggleSeatSelection('{{ $seat['id'] }}')"
-                                        class="absolute flex items-center justify-center text-xs font-bold border-2 rounded cursor-pointer transition-all duration-200 hover:scale-110
-                                        @if(in_array($seat['id'], $selectedSeats))
-                                            bg-blue-500 border-blue-600 text-white transform scale-110
-                                        @elseif(!($seat['is_available'] ?? true))
-                                            bg-red-500 border-red-600 text-white cursor-not-allowed
-                                        @elseif($seat['type'] === 'VIP')
-                                            bg-yellow-400 border-yellow-500 text-gray-800 hover:bg-yellow-500
-                                        @else
-                                            bg-green-400 border-green-500 text-white hover:bg-green-500
-                                        @endif"
-                                        style="left: {{ $seat['x'] }}px; top: {{ $seat['y'] }}px; width: {{ $seat['width'] ?? 40 }}px; height: {{ $seat['height'] ?? 40 }}px;"
-                                        title="Kursi {{ $seat['number'] }} - {{ $seat['type'] }} - Rp {{ number_format($seat['price'] ?? 0, 0, ',', '.') }}"
-                                        @if(!($seat['is_available'] ?? true)) disabled @endif>
-                                    {{ $seat['number'] }}
-                                </button>
-                                @endforeach
-                            @endif
-                        @else
-                            <!-- Render Tables dari Database -->
-                            @if(isset($selectedLayout['layout_config']['tables']))
-                                @foreach($selectedLayout['layout_config']['tables'] as $table)
-                                <button wire:click="toggleTableSelection({{ $table['id'] }})"
-                                        class="absolute flex items-center justify-center text-sm font-bold border-3 transition-all duration-200 hover:scale-105
-                                        @if(in_array($table['id'], $selectedTables))
-                                            border-blue-500 bg-blue-100 text-blue-800 transform scale-105
-                                        @elseif(!($table['is_available'] ?? true))
-                                            border-red-500 bg-red-100 text-red-800 cursor-not-allowed
-                                        @else
-                                            border-purple-500 bg-purple-100 text-purple-800 hover:bg-purple-200
-                                        @endif
-                                        @if($table['shape'] === 'circle') rounded-full
-                                        @elseif($table['shape'] === 'diamond') transform rotate-45
-                                        @else rounded-lg @endif"
-                                        style="left: {{ $table['x'] }}px; top: {{ $table['y'] }}px; width: {{ $table['width'] ?? 120 }}px; height: {{ $table['height'] ?? 120 }}px;"
-                                        title="Meja {{ $table['number'] }} - {{ $table['capacity'] }} kursi - Rp {{ number_format($table['price'] ?? 0, 0, ',', '.') }} - ID: {{ $table['id'] }}"
-                                        data-table-id="{{ $table['id'] }}"
-                                        @if(!($table['is_available'] ?? true)) disabled @endif>
-                                    <div class="@if($table['shape'] === 'diamond') -rotate-45 @endif text-center">
-                                        <div class="font-bold">{{ $table['number'] }}</div>
-                                        <div class="text-xs">{{ $table['capacity'] }}p</div>
+                    <!-- Seat Canvas -->
+                        <div class="relative border-2 border-dashed border-gray-300 rounded-lg h-[550px] w-[100%] overflow-auto"
+                            style="
+                                background-color: #f9fafb;
+                                @if(!empty($selectedLayout['background_image']))
+                                    @php
+                                        // Set opacity untuk background image (0.1 = 10%, 0.5 = 50%, 1 = 100%)
+                                        $backgroundOpacity = $selectedLayout['layout_config']['background_opacity'] ?? 0.5; // Default 30%
+                                        $overlayOpacity = 1 - $backgroundOpacity; // Untuk overlay putih
+                                    @endphp
+                                    background-image: 
+                                        linear-gradient(rgba(255, 255, 255, {{ $overlayOpacity }}), rgba(255, 255, 255, {{ $overlayOpacity }})),
+                                        url('{{ asset('storage/' . $selectedLayout['background_image']) }}');
+                                    background-size: contain;
+                                    background-repeat: no-repeat;
+                                    background-position: center;
+                                @else
+                                    background-image: linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px);
+                                    background-size: 20px 20px;
+                                @endif
+                            ">
+                            
+                            @if($sellingMode === 'per_seat')
+                                <!-- Render Seats dari Database -->
+                                @if(isset($selectedLayout['layout_config']['custom_seats']))
+                                    @foreach($selectedLayout['layout_config']['custom_seats'] as $seat)
+                                    <button wire:click="toggleSeatSelection('{{ $seat['id'] }}')"
+                                            class="absolute flex items-center justify-center text-xs font-bold border-2 rounded cursor-pointer transition-all duration-200 hover:scale-110
+                                            @if(in_array($seat['id'], $selectedSeats))
+                                                bg-blue-500 border-blue-600 text-white transform scale-110
+                                            @elseif(!($seat['is_available'] ?? true))
+                                                bg-red-500 border-red-600 text-white cursor-not-allowed
+                                            @elseif($seat['type'] === 'VIP')
+                                                bg-yellow-400 border-yellow-500 text-gray-800 hover:bg-yellow-500
+                                            @else
+                                                bg-green-400 border-green-500 text-white hover:bg-green-500
+                                            @endif"
+                                            style="left: {{ $seat['x'] }}px; top: {{ $seat['y'] }}px; width: {{ $seat['width'] ?? 40 }}px; height: {{ $seat['height'] ?? 40 }}px;"
+                                            title="Kursi {{ $seat['number'] }} - {{ $seat['type'] }} - Rp {{ number_format($seat['price'] ?? 0, 0, ',', '.') }}"
+                                            @if(!($seat['is_available'] ?? true)) disabled @endif>
+                                        {{ $seat['number'] }}
+                                    </button>
+                                    @endforeach
+                                @endif
+                            @else
+                                <!-- Render Tables dari Database -->
+                                @if(isset($selectedLayout['layout_config']['tables']))
+                                    @foreach($selectedLayout['layout_config']['tables'] as $table)
+                                        @php
+                                            $tableId = (int) $table['id']; // Convert to integer
+                                            $isSelected = in_array($tableId, $selectedTables);
+                                            $isReserved = in_array($tableId, $reservedTables);
+                                            $isAvailable = $table['is_available'] ?? true;
+                                        @endphp
+                                        <button wire:click="toggleTableSelection({{ $tableId }})"
+                                                class="absolute flex items-center justify-center text-sm font-bold border-3 transition-all duration-200 hover:scale-105
+                                                @if($isSelected)
+                                                    border-blue-500 bg-blue-100 text-blue-800 transform scale-105
+                                                @elseif($isReserved || !$isAvailable)
+                                                    border-red-500 bg-red-100 text-red-800 cursor-not-allowed
+                                                @else
+                                                    border-purple-500 bg-purple-400 text-purple-800 hover:bg-purple-300 text-white
+                                                @endif
+                                                @if($table['shape'] === 'circle') rounded-full
+                                                @elseif($table['shape'] === 'diamond') transform rotate-45
+                                                @else rounded-lg @endif"
+                                                style="left: {{ $table['x'] }}px; top: {{ $table['y'] }}px; width: {{ $table['width'] ?? 120 }}px; height: {{ $table['height'] ?? 120 }}px;"
+                                                title="Meja {{ $table['number'] }} - {{ $table['capacity'] }} kursi - Rp {{ number_format($table['price'] ?? 0, 0, ',', '.') }} - ID: {{ $tableId }} - Available: {{ $isAvailable ? 'Yes' : 'No' }} - Reserved: {{ $isReserved ? 'Yes' : 'No' }}"
+                                                data-table-id="{{ $tableId }}"
+                                                @if($isReserved || !$isAvailable) disabled @endif>
+                                            <div class="@if($table['shape'] === 'diamond') -rotate-45 @endif text-center">
+                                                <div class="font-bold">{{ $table['number'] }}</div>
+                                                {{-- <div class="text-xs">{{ $table['capacity'] }}p</div> --}}
+                                                {{-- @if(config('app.debug'))
+                                                    <div class="text-xs">ID:{{ $tableId }}</div>
+                                                    <div class="text-xs">{{ $isReserved ? 'R' : ($isSelected ? 'S' : 'A') }}</div>
+                                                @endif --}}
+                                            </div>
+                                        </button>
+                                    @endforeach
+                                @else
+                                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-500 text-center">
+                                        <p>Tidak ada meja yang tersedia</p>
                                         @if(config('app.debug'))
-                                            <div class="text-xs">ID:{{ $table['id'] }}</div>
+                                            <p class="text-xs mt-2">
+                                                Layout Config: {{ json_encode($selectedLayout['layout_config'] ?? []) }}
+                                            </p>
                                         @endif
                                     </div>
-                                </button>
-                                @endforeach
+                                @endif
                             @endif
-                        @endif
-                    </div>
+                        </div>
 
                     <!-- Legend -->
                     <div class="mt-6">
@@ -385,5 +420,21 @@
             window.Livewire.dispatch('refreshReservedItems');
         }
     }, 30000);
+
+    function updateBackgroundStyle(property, value) {
+    const canvas = document.querySelector('.relative.border-2.border-dashed');
+    const currentStyle = canvas.style.backgroundImage;
+    
+    if (property === 'size') {
+        canvas.style.backgroundSize = value;
+    } else if (property === 'position') {
+        canvas.style.backgroundPosition = value;
+    } else if (property === 'opacity') {
+        // Update opacity overlay
+        const url = currentStyle.match(/url\([^)]+\)/)[0];
+        const opacity = 1 - parseFloat(value);
+        canvas.style.backgroundImage = `linear-gradient(rgba(255,255,255,${opacity}), rgba(255,255,255,${opacity})), ${url}`;
+    }
+}
 </script>
 @endpush

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class SeatLayout extends Model
 {
@@ -18,6 +19,7 @@ class SeatLayout extends Model
         'layout_name',
         'layout_config',
         'selling_mode' ,
+        'background_image', // Optional field for layout background image
     ];
 
     protected function casts(): array
@@ -43,29 +45,29 @@ class SeatLayout extends Model
     /**
      * Get layout statistics
      */
-    public function getLayoutStats(): array
-    {
-        $config = $this->layout_config;
-        $customSeats = $config['custom_seats'] ?? [];
+    // public function getLayoutStats(): array
+    // {
+    //     $config = $this->layout_config;
+    //     $customSeats = $config['custom_seats'] ?? [];
         
-        $totalSeats = count($customSeats);
-        $vipSeats = collect($customSeats)->where('type', 'VIP')->count();
-        $regularSeats = collect($customSeats)->where('type', 'Regular')->count();
+    //     $totalSeats = count($customSeats);
+    //     $vipSeats = collect($customSeats)->where('type', 'VIP')->count();
+    //     $regularSeats = collect($customSeats)->where('type', 'Regular')->count();
         
-        $vipPrice = $config['vip_price'] ?? 300000;
-        $regularPrice = $config['regular_price'] ?? 150000;
+    //     $vipPrice = $config['vip_price'] ?? 300000;
+    //     $regularPrice = $config['regular_price'] ?? 150000;
         
-        $estimatedRevenue = ($vipSeats * $vipPrice) + ($regularSeats * $regularPrice);
+    //     $estimatedRevenue = ($vipSeats * $vipPrice) + ($regularSeats * $regularPrice);
         
-        return [
-            'total_seats' => $totalSeats,
-            'vip_seats' => $vipSeats,
-            'regular_seats' => $regularSeats,
-            'estimated_revenue' => $estimatedRevenue,
-            'vip_price' => $vipPrice,
-            'regular_price' => $regularPrice,
-        ];
-    }
+    //     return [
+    //         'total_seats' => $totalSeats,
+    //         'vip_seats' => $vipSeats,
+    //         'regular_seats' => $regularSeats,
+    //         'estimated_revenue' => $estimatedRevenue,
+    //         'vip_price' => $vipPrice,
+    //         'regular_price' => $regularPrice,
+    //     ];
+    // }
 
     /**
      * Check if this is an interactive layout
@@ -196,5 +198,100 @@ class SeatLayout extends Model
     public function getRouteKeyName()
     {
         return 'layout_id';
+    }
+
+    public function getBackgroundImageUrlAttribute(): ?string
+    {
+        if (!$this->background_image) {
+            return null;
+        }
+        
+        // Check if it's already a full URL
+        if (filter_var($this->background_image, FILTER_VALIDATE_URL)) {
+            return $this->background_image;
+        }
+        
+        // Return storage URL
+        return Storage::url($this->background_image);
+    }
+
+    public function hasBackgroundImage(): bool
+    {
+        return !empty($this->background_image);
+    }
+
+    public function deleteBackgroundImage(): bool
+    {
+        if (!$this->background_image) {
+            return true;
+        }
+        
+        // Don't delete if it's a URL
+        if (filter_var($this->background_image, FILTER_VALIDATE_URL)) {
+            return true;
+        }
+        
+        if (Storage::exists($this->background_image)) {
+            Storage::delete($this->background_image);
+        }
+        
+        $this->update(['background_image' => null]);
+        
+        return true;
+    }
+
+    public function getLayoutStats(): array
+    {
+        $config = $this->layout_config;
+        $sellingMode = $config['selling_mode'] ?? 'per_seat';
+        
+        if ($sellingMode === 'per_table') {
+            $tables = $config['tables'] ?? [];
+            $totalTables = count($tables);
+            $totalCapacity = collect($tables)->sum('capacity');
+            $tablePrice = $config['table_price'] ?? 500000;
+            $estimatedRevenue = $totalTables * $tablePrice;
+            
+            return [
+                'selling_mode' => 'per_table',
+                'total_tables' => $totalTables,
+                'total_capacity' => $totalCapacity,
+                'table_price' => $tablePrice,
+                'estimated_revenue' => $estimatedRevenue,
+                'has_background' => $this->hasBackgroundImage(), // ← TAMBAHKAN INI
+            ];
+        } else {
+            $customSeats = $config['custom_seats'] ?? [];
+            $totalSeats = count($customSeats);
+            $vipSeats = collect($customSeats)->where('type', 'VIP')->count();
+            $regularSeats = collect($customSeats)->where('type', 'Regular')->count();
+            
+            $vipPrice = $config['vip_price'] ?? 300000;
+            $regularPrice = $config['regular_price'] ?? 150000;
+            
+            $estimatedRevenue = ($vipSeats * $vipPrice) + ($regularSeats * $regularPrice);
+            
+            return [
+                'selling_mode' => 'per_seat',
+                'total_seats' => $totalSeats,
+                'vip_seats' => $vipSeats,
+                'regular_seats' => $regularSeats,
+                'estimated_revenue' => $estimatedRevenue,
+                'vip_price' => $vipPrice,
+                'regular_price' => $regularPrice,
+                'has_background' => $this->hasBackgroundImage(), // ← TAMBAHKAN INI
+            ];
+        }
+    }
+
+    // Update boot method untuk auto-delete background
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Delete background image when layout is deleted
+        static::deleting(function ($layout) {
+            $layout->deleteBackgroundImage();
+        });
     }
 }
