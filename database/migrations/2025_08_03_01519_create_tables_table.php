@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('layout_id')->constrained('seat_layouts', 'layout_id')->onDelete('cascade');
             $table->string('table_number');
             $table->integer('capacity');
+            $table->enum('table_type', ['Regular', 'Gold', 'VIP'])->default('Regular');
             $table->decimal('table_price', 10, 2);
             $table->float('position_x');
             $table->float('position_y');

@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('seats', function (Blueprint $table) {
             $table->id('seat_id');
             $table->foreignId('layout_id')->constrained('seat_layouts', 'layout_id')->onDelete('cascade');
-            $table->foreignId('table_id')->nullable()->constrained('tables', 'table_id')->nullOnDelete();
+            // $table->foreignId('table_id')->nullable()->constrained('tables', 'table_id')->nullOnDelete();
             $table->string('seat_number');
             $table->string('seat_row'); // A, B, C, etc.
-            $table->enum('seat_type', ['Regular', 'VIP', 'Premium'])->default('Regular');
+            $table->enum('seat_type', ['Regular', 'Gold', 'VIP'])->default('Regular');
             $table->decimal('seat_price', 10, 2);
             $table->boolean('is_available')->default(true);
             

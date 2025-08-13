@@ -32,8 +32,12 @@ class SeatLayoutManager extends Component
     public $rows;
     public $columns;
     public $vip_rows = [];
-    public $vip_price = 300000;
-    public $regular_price = 150000;
+    
+    // UPDATED: Tambah pricing untuk 3 kategori
+    public $vip_price = 500000;      // Termahal
+    public $gold_price = 300000;     // Menengah
+    public $regular_price = 150000;  // Termurah
+    
     public $custom_seats = [];
 
     public $background_image;
@@ -42,7 +46,12 @@ class SeatLayoutManager extends Component
     // Mode penjualan: per_seat atau per_table
     public $selling_mode = 'per_seat';
     public $tables = [];
-    public $table_price = 500000;
+    
+    // UPDATED: Tambah table pricing untuk 3 kategori
+    public $vip_table_price = 1000000;    // Termahal
+    public $gold_table_price = 700000;    // Menengah  
+    public $regular_table_price = 500000; // Termurah
+    
     public $table_capacity = 4;
     
     public $showLayoutModal = false;
@@ -166,92 +175,104 @@ class SeatLayoutManager extends Component
         }
     }
 
-public function editLayout($layoutId)
-{
-    try {
-        $this->debugLog('edit_layout_start', ['layout_id' => $layoutId]);
+    public function editLayout($layoutId)
+    {
+        try {
+            $this->debugLog('edit_layout_start', ['layout_id' => $layoutId]);
 
-        $layout = SeatLayout::findOrFail($layoutId);
-        $config = $layout->layout_config;
+            $layout = SeatLayout::findOrFail($layoutId);
+            $config = $layout->layout_config;
 
-        // Set form data
-        $this->editingLayoutId = $layoutId;
-        $this->layout_name = $layout->layout_name;
-        $this->selling_mode = $config['selling_mode'] ?? 'per_seat';
-        
-        // FIXED: Load and transform dengan ukuran sebenarnya
-        $this->custom_seats = $this->transformSeatsForEdit($config['custom_seats'] ?? []);
-        $this->tables = $this->transformTablesForEdit($config['tables'] ?? []);
-        
-        // Load pricing
-        $this->vip_price = $config['vip_price'] ?? 300000;
-        $this->regular_price = $config['regular_price'] ?? 150000;
-        $this->table_price = $config['table_price'] ?? 500000;
-        $this->table_capacity = $config['table_capacity'] ?? 4;
+            // Set form data
+            $this->editingLayoutId = $layoutId;
+            $this->layout_name = $layout->layout_name;
+            $this->selling_mode = $config['selling_mode'] ?? 'per_seat';
+            
+            // Load and transform dengan ukuran sebenarnya
+            $this->custom_seats = $this->transformSeatsForEdit($config['custom_seats'] ?? []);
+            $this->tables = $this->transformTablesForEdit($config['tables'] ?? []);
+            
+            // UPDATED: Load pricing untuk 3 kategori
+            if ($this->selling_mode === 'per_table') {
+                $this->vip_table_price = $config['vip_table_price'] ?? 1000000;
+                $this->gold_table_price = $config['gold_table_price'] ?? 700000;
+                $this->regular_table_price = $config['regular_table_price'] ?? 500000;
+            } else {
+                $this->vip_price = $config['vip_price'] ?? 500000;
+                $this->gold_price = $config['gold_price'] ?? 300000;
+                $this->regular_price = $config['regular_price'] ?? 150000;
+            }
+            
+            $this->table_capacity = $config['table_capacity'] ?? 4;
 
-        // FIXED: Load background image properly
-        $this->current_background_image = $layout->background_image_url;
+            // Load background image properly
+            $this->current_background_image = $layout->background_image_url;
 
-        $this->debugLog('edit_layout_data_loaded', [
-            'layout_id' => $layoutId,
-            'selling_mode' => $this->selling_mode,
-            'seats_count' => count($this->custom_seats),
-            'tables_count' => count($this->tables),
-            'background_image' => $this->current_background_image,
-            'seats_sizes' => array_map(function($seat) {
-                return ['width' => $seat['width'], 'height' => $seat['height']];
-            }, array_slice($this->custom_seats, 0, 3)),
-            'tables_sizes' => array_map(function($table) {
-                return ['width' => $table['width'], 'height' => $table['height']];
-            }, array_slice($this->tables, 0, 3))
-        ]);
-
-        // Open modal
-        $this->showLayoutModal = true;
-
-        // FIXED: Dispatch event dengan data lengkap termasuk background
-        $this->dispatch('layout-data-loaded', [
-            'selling_mode' => $this->selling_mode,
-            'custom_seats' => $this->custom_seats,
-            'tables' => $this->tables,
-            'background_image' => $this->current_background_image,
-            'layout_id' => $layoutId
-        ]);
-
-        $this->debugLog('edit_layout_success', [
-            'layout_id' => $layoutId,
-            'data_dispatched' => [
+            $this->debugLog('edit_layout_data_loaded', [
+                'layout_id' => $layoutId,
+                'selling_mode' => $this->selling_mode,
                 'seats_count' => count($this->custom_seats),
                 'tables_count' => count($this->tables),
-                'has_background' => !empty($this->current_background_image)
-            ]
-        ]);
+                'background_image' => $this->current_background_image,
+                'pricing' => [
+                    'vip_price' => $this->vip_price,
+                    'gold_price' => $this->gold_price,
+                    'regular_price' => $this->regular_price,
+                    'vip_table_price' => $this->vip_table_price,
+                    'gold_table_price' => $this->gold_table_price,
+                    'regular_table_price' => $this->regular_table_price
+                ]
+            ]);
 
-    } catch (Exception $e) {
-        $this->debugLog('edit_layout_error', [
-            'layout_id' => $layoutId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        session()->flash('error', 'Gagal memuat layout: ' . $e->getMessage());
+            // Open modal
+            $this->showLayoutModal = true;
+
+            // Dispatch event dengan data lengkap termasuk background
+            $this->dispatch('layout-data-loaded', [
+                'selling_mode' => $this->selling_mode,
+                'custom_seats' => $this->custom_seats,
+                'tables' => $this->tables,
+                'background_image' => $this->current_background_image,
+                'layout_id' => $layoutId
+            ]);
+
+            $this->debugLog('edit_layout_success', [
+                'layout_id' => $layoutId,
+                'data_dispatched' => [
+                    'seats_count' => count($this->custom_seats),
+                    'tables_count' => count($this->tables),
+                    'has_background' => !empty($this->current_background_image)
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            $this->debugLog('edit_layout_error', [
+                'layout_id' => $layoutId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            session()->flash('error', 'Gagal memuat layout: ' . $e->getMessage());
+        }
     }
-}
-
 
     public function saveLayout()
     {
-        // dd($this->selling_mode);
         $this->debugLog('save_layout_start', [
             'layout_name' => $this->layout_name,
             'selling_mode' => $this->selling_mode,
             'custom_seats_count' => count($this->custom_seats),
             'custom_seats_sample' => array_slice($this->custom_seats, 0, 3),
             'tables_count' => count($this->tables),
-            'vip_price' => $this->vip_price,
-            'regular_price' => $this->regular_price,
-            'editing_layout_id' => $this->editingLayoutId,
-            'request_data' => request()->all()
+            'pricing' => [
+                'vip_price' => $this->vip_price,
+                'gold_price' => $this->gold_price,
+                'regular_price' => $this->regular_price,
+                'vip_table_price' => $this->vip_table_price,
+                'gold_table_price' => $this->gold_table_price,
+                'regular_table_price' => $this->regular_table_price
+            ],
+            'editing_layout_id' => $this->editingLayoutId
         ]);
 
         // Enhanced validation with debugging
@@ -283,25 +304,20 @@ public function editLayout($layoutId)
                     'tables' => $this->tables,
                     'selling_mode' => $this->selling_mode
                 ]);
-                // $this->generateTables($layout);
                 $this->addError('tables', 'Layout harus memiliki minimal satu meja.');
                 return;
             }
         } else {
             if (empty($this->custom_seats)) {
-                // dd();
                 $this->debugLog('no_seats_error', [
                     'custom_seats' => $this->custom_seats,
                     'selling_mode' => $this->selling_mode
                 ]);
-                // $this->generateCustomSeats($layout);
                 $this->addError('custom_seats', 'Layout harus memiliki minimal satu kursi.');
                 return;
             }
         }
 
-        // Event ID debugging
-        
         $eventId = $this->getEventId();
         $this->debugLog('event_id_resolution', [
             'event_object_key' => $this->event->getKey(),
@@ -317,13 +333,14 @@ public function editLayout($layoutId)
 
         $backgroundImagePath = null;
         if ($this->current_background_image) {
-            // If it's a storage URL, extract the path
             if (str_contains($this->current_background_image, '/storage/')) {
                 $backgroundImagePath = str_replace('/storage/', '', parse_url($this->current_background_image, PHP_URL_PATH));
             } else {
                 $backgroundImagePath = $this->current_background_image;
             }
         }
+        
+        // UPDATED: Include pricing untuk 3 kategori
         $layoutData = [
             'event_id' => $eventId,
             'layout_name' => $this->layout_name,
@@ -332,12 +349,17 @@ public function editLayout($layoutId)
                 'selling_mode' => $this->selling_mode,
                 'custom_seats' => $this->custom_seats,
                 'tables' => $this->tables,
+                // Seat pricing
                 'vip_price' => $this->vip_price,
+                'gold_price' => $this->gold_price,
                 'regular_price' => $this->regular_price,
-                'table_price' => $this->table_price,
+                // Table pricing
+                'vip_table_price' => $this->vip_table_price,
+                'gold_table_price' => $this->gold_table_price,
+                'regular_table_price' => $this->regular_table_price,
                 'table_capacity' => $this->table_capacity,
                 'created_with' => 'interactive_designer',
-                'version' => '2.1',
+                'version' => '2.2',
                 'debug_info' => [
                     'created_at' => now(),
                     'user_id' => auth()->id(),
@@ -345,8 +367,6 @@ public function editLayout($layoutId)
                 ]
             ],
         ];
-
-        // dd($layoutData);
 
         $this->debugLog('layout_data_prepared', [
             'layout_data' => $layoutData,
@@ -530,9 +550,8 @@ public function editLayout($layoutId)
             'layout_data' => $layoutData
         ]);
         
-        // dd($layoutData);
         $layout = SeatLayout::create($layoutData);
-        // dd($layout);
+        
         $this->debugLog('layout_created', [
             'layout_id' => $layout->getKey(),
             'created_data' => $layout->toArray()
@@ -549,182 +568,221 @@ public function editLayout($layoutId)
     }
 
     private function generateCustomSeats($layout)
-{
-    $this->debugLog('generate_seats_start', [
-        'layout_id' => $layout->getKey(),
-        'seats_to_create' => count($this->custom_seats),
-        'selling_mode' => $this->selling_mode
-    ]);
+    {
+        $this->debugLog('generate_seats_start', [
+            'layout_id' => $layout->getKey(),
+            'seats_to_create' => count($this->custom_seats),
+            'selling_mode' => $this->selling_mode
+        ]);
 
-    $createdSeats = 0;
-    $errors = [];
+        $createdSeats = 0;
+        $errors = [];
 
-    foreach ($this->custom_seats as $index => $seatData) {
-        try {
-            $seatNumber = $this->generateSeatNumber($seatData);
-            $seatRow = $this->generateSeatRow($seatData);
-            
-            // PERBAIKAN: Gunakan ukuran sebenarnya, dengan minimum yang realistis
-            $width = max((int) ($seatData['width'] ?? 15), 12);  // Min 12px, bukan 32px
-            $height = max((int) ($seatData['height'] ?? 15), 12); // Min 12px, bukan 32px
-            
-            $seatDataToCreate = [
-                'layout_id' => $layout->getKey(),
-                'seat_number' => $seatNumber,
-                'seat_row' => $seatRow,
-                'seat_type' => $seatData['type'] ?? 'Regular',
-                'seat_price' => $seatData['type'] === 'VIP' ? $this->vip_price : $this->regular_price,
-                'is_available' => true,
-                'position_x' => (int) ($seatData['x'] ?? 0),
-                'position_y' => (int) ($seatData['y'] ?? 0),
-                'width' => $width,   // SIMPAN ukuran sebenarnya
-                'height' => $height, // SIMPAN ukuran sebenarnya
-            ];
+        foreach ($this->custom_seats as $index => $seatData) {
+            try {
+                $seatNumber = $this->generateSeatNumber($seatData);
+                $seatRow = $this->generateSeatRow($seatData);
+                
+                // Gunakan ukuran sebenarnya, dengan minimum yang realistis
+                $width = max((int) ($seatData['width'] ?? 15), 12);
+                $height = max((int) ($seatData['height'] ?? 15), 12);
+                
+                // UPDATED: Support untuk 3 kategori seat
+                $seatType = $seatData['type'] ?? 'Regular';
+                if (!in_array($seatType, ['Regular', 'Gold', 'VIP'])) {
+                    $seatType = 'Regular';
+                }
+                
+                // UPDATED: Price berdasarkan kategori
+                $seatPrice = match($seatType) {
+                    'VIP' => $this->vip_price,
+                    'Gold' => $this->gold_price,
+                    'Regular' => $this->regular_price,
+                    default => $this->regular_price
+                };
+                
+                $seatDataToCreate = [
+                    'layout_id' => $layout->getKey(),
+                    'seat_number' => $seatNumber,
+                    'seat_row' => $seatRow,
+                    'seat_type' => $seatType,
+                    'seat_price' => $seatPrice,
+                    'is_available' => true,
+                    'position_x' => (int) ($seatData['x'] ?? 0),
+                    'position_y' => (int) ($seatData['y'] ?? 0),
+                    'width' => $width,
+                    'height' => $height,
+                ];
 
-            $this->debugLog('creating_seat', [
-                'seat_index' => $index,
-                'original_size' => ['width' => $seatData['width'] ?? 'not_set', 'height' => $seatData['height'] ?? 'not_set'],
-                'saved_size' => ['width' => $width, 'height' => $height],
-                'seat_data' => $seatDataToCreate
-            ]);
+                $this->debugLog('creating_seat', [
+                    'seat_index' => $index,
+                    'seat_type' => $seatType,
+                    'seat_price' => $seatPrice,
+                    'original_size' => ['width' => $seatData['width'] ?? 'not_set', 'height' => $seatData['height'] ?? 'not_set'],
+                    'saved_size' => ['width' => $width, 'height' => $height],
+                    'seat_data' => $seatDataToCreate
+                ]);
 
-            $seat = Seat::create($seatDataToCreate);
-            
-            $this->debugLog('seat_created', [
-                'seat_id' => $seat->getKey(),
-                'seat_number' => $seat->seat_number,
-                'final_size' => ['width' => $seat->width, 'height' => $seat->height]
-            ]);
-            
-            $createdSeats++;
-            
-        } catch (Exception $e) {
-            $error = [
-                'seat_index' => $index,
-                'seat_data' => $seatData,
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ];
-            $errors[] = $error;
-            
-            $this->debugLog('seat_creation_failed', $error);
+                $seat = Seat::create($seatDataToCreate);
+                
+                $this->debugLog('seat_created', [
+                    'seat_id' => $seat->getKey(),
+                    'seat_number' => $seat->seat_number,
+                    'seat_type' => $seat->seat_type,
+                    'final_size' => ['width' => $seat->width, 'height' => $seat->height]
+                ]);
+                
+                $createdSeats++;
+                
+            } catch (Exception $e) {
+                $error = [
+                    'seat_index' => $index,
+                    'seat_data' => $seatData,
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ];
+                $errors[] = $error;
+                
+                $this->debugLog('seat_creation_failed', $error);
+            }
+        }
+
+        $this->debugLog('generate_seats_completed', [
+            'total_seats_processed' => count($this->custom_seats),
+            'successfully_created' => $createdSeats,
+            'errors_count' => count($errors)
+        ]);
+
+        if (count($errors) > 0) {
+            throw new Exception('Gagal membuat ' . count($errors) . ' kursi. Lihat log untuk detail.');
         }
     }
-
-    $this->debugLog('generate_seats_completed', [
-        'total_seats_processed' => count($this->custom_seats),
-        'successfully_created' => $createdSeats,
-        'errors_count' => count($errors)
-    ]);
-
-    if (count($errors) > 0) {
-        throw new Exception('Gagal membuat ' . count($errors) . ' kursi. Lihat log untuk detail.');
-    }
-}
 
     private function generateTables($layout)
     {
-    // Log informasi awal
-    \Log::info('🍽️ Generating tables for layout', [
-        'layout_id' => $layout->getKey() ?? $layout->layout_id,
-        'tables_count' => count($this->tables),
-        'table_capacity' => $this->table_capacity,
-        'table_price' => $this->table_price
-    ]);
-
-    // Debug: tampilkan contoh data meja
-    if (count($this->tables) > 0) {
-        \Log::debug('📊 Contoh data meja pertama:', [
-            'table_data' => $this->tables[0]
+        Log::info('🍽️ Generating tables for layout', [
+            'layout_id' => $layout->getKey() ?? $layout->layout_id,
+            'tables_count' => count($this->tables),
+            'table_capacity' => $this->table_capacity,
+            'table_pricing' => [
+                'vip_table_price' => $this->vip_table_price,
+                'gold_table_price' => $this->gold_table_price, 
+                'regular_table_price' => $this->regular_table_price
+            ]
         ]);
-    } else {
-        \Log::warning('⚠️ Tidak ada data meja untuk dibuat!');
-        return;
-    }
-    $createdTables = 0;
-    $insertData = [];
-    $now = now();
 
-    // Membuat data untuk batch insert
-    foreach ($this->tables as $index => $tableData) {
-        try {
-            // Pastikan kapasitas meja valid
-            $capacity = isset($tableData['capacity']) ? (int)$tableData['capacity'] : $this->table_capacity;
-            if ($capacity < 2) $capacity = 2; // Minimal 2 orang
-            if ($capacity > 12) $capacity = 12; // Maksimal 12 orang
-            
-            // Pastikan shape valid
-            $shape = $tableData['shape'] ?? 'square';
-            if (!in_array($shape, ['square', 'circle', 'rectangle', 'diamond'])) {
-                $shape = 'square'; // Default ke square jika tidak valid
-            }
-            
-            // Siapkan data untuk tabel (model Seat)
-            $tableRecord = [
-                'layout_id' => $layout->getKey() ?? $layout->layout_id,
-                'table_number' => $tableData['number'] ?? ('T' . ($index + 1)),
-                'capacity' => $capacity,
-                'table_price' => (float) $this->table_price, // Menggunakan seat_type 'TABLE' untuk membedakan dengan kursi
-                'position_x' => (int) ($tableData['x'] ?? 0),
-                'position_y' => (int) ($tableData['y'] ?? 0),
-                'width' => $tableData['width'] ?? 120,
-                'height' => $tableData['width'] ?? 120,
-                'is_available' => true,
-                'table_metadata' => json_encode([
-                    'table' => true,
+        if (count($this->tables) > 0) {
+            Log::debug('📊 Contoh data meja pertama:', [
+                'table_data' => $this->tables[0]
+            ]);
+        } else {
+            Log::warning('⚠️ Tidak ada data meja untuk dibuat!');
+            return;
+        }
+        
+        $createdTables = 0;
+        $insertData = [];
+        $now = now();
+
+        // Membuat data untuk batch insert
+        foreach ($this->tables as $index => $tableData) {
+            try {
+                // Pastikan kapasitas meja valid
+                $capacity = isset($tableData['capacity']) ? (int)$tableData['capacity'] : $this->table_capacity;
+                if ($capacity < 2) $capacity = 2;
+                if ($capacity > 12) $capacity = 12;
+                
+                // Pastikan shape valid
+                $shape = $tableData['shape'] ?? 'square';
+                if (!in_array($shape, ['square', 'circle', 'rectangle', 'diamond'])) {
+                    $shape = 'square';
+                }
+                
+                // UPDATED: Support untuk 3 kategori table
+                $tableType = $tableData['type'] ?? 'Regular';
+                if (!in_array($tableType, ['Regular', 'Gold', 'VIP'])) {
+                    $tableType = 'Regular';
+                }
+                
+                // UPDATED: Price berdasarkan kategori
+                $tablePrice = match($tableType) {
+                    'VIP' => $this->vip_table_price,
+                    'Gold' => $this->gold_table_price,
+                    'Regular' => $this->regular_table_price,
+                    default => $this->regular_table_price
+                };
+                
+                // Siapkan data untuk tabel (model Table)
+                $tableRecord = [
+                    'layout_id' => $layout->getKey() ?? $layout->layout_id,
+                    'table_number' => $tableData['number'] ?? ('T' . ($index + 1)),
                     'capacity' => $capacity,
-                    'shape' => $shape,
+                    'table_price' => (float) $tablePrice,
+                    'table_type' => $tableType,
+                    'position_x' => (int) ($tableData['x'] ?? 0),
+                    'position_y' => (int) ($tableData['y'] ?? 0),
                     'width' => $tableData['width'] ?? 120,
-                    'height' => $tableData['height'] ?? 120
-                ]),
-                'created_at' => $now,
-                'updated_at' => $now
-            ];
-            // dd($tableRecord);
-            $insertData[] = $tableRecord;
-            
-            \Log::info('✅ Table data prepared', [
-                'index' => $index,
-                'table_number' => $tableRecord['table_number'],
-                'position' => "({$tableRecord['position_x']}, {$tableRecord['position_y']})",
-                'capacity' => $capacity,
-                'shape' => $shape
-            ]);
+                    'height' => $tableData['width'] ?? 120,
+                    'is_available' => true,
+                    'table_metadata' => json_encode([
+                        'table' => true,
+                        'capacity' => $capacity,
+                        'shape' => $shape,
+                        'type' => $tableType,
+                        'width' => $tableData['width'] ?? 120,
+                        'height' => $tableData['height'] ?? 120
+                    ]),
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ];
 
-            //  $tableSeat = Table::create($tableRecord);
+                $insertData[] = $tableRecord;
+                
+                Log::info('✅ Table data prepared', [
+                    'index' => $index,
+                    'table_number' => $tableRecord['table_number'],
+                    'table_type' => $tableType,
+                    'table_price' => $tablePrice,
+                    'position' => "({$tableRecord['position_x']}, {$tableRecord['position_y']})",
+                    'capacity' => $capacity,
+                    'shape' => $shape
+                ]);
 
-             $this->debugLog('table_created', [
-                'seat_id' => $tableSeat->getKey(),
-                'tableSeat_number' => $tableSeat->table_number,
-                'created_data' => $tableSeat->toArray()
-            ]);
-            $createdTables++;
-        } catch (\Exception $e) {
-            \Log::error('❌ Error preparing table data: ' . $e->getMessage(), [
-                'index' => $index,
-                'table_data' => $tableData,
-                'trace' => $e->getTraceAsString()
-            ]);
-            continue;
+                $this->debugLog('table_created', [
+                    'table_index' => $index,
+                    'table_number' => $tableRecord['table_number'],
+                    'table_type' => $tableType,
+                    'table_price' => $tablePrice,
+                    'created_data' => $tableRecord
+                ]);
+                
+                $createdTables++;
+            } catch (Exception $e) {
+                Log::error('❌ Error preparing table data: ' . $e->getMessage(), [
+                    'index' => $index,
+                    'table_data' => $tableData,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                continue;
+            }
+        }
+
+        // Batch insert tables jika ada data
+        if (!empty($insertData)) {
+            try {
+                DB::table('tables')->insert($insertData);
+                Log::info('✅ Tables inserted successfully', ['count' => count($insertData)]);
+            } catch (Exception $e) {
+                Log::error('❌ Error inserting tables: ' . $e->getMessage(), [
+                    'error_details' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
+        } else {
+            Log::warning('⚠️ No table data to insert');
         }
     }
-
-    // Batch insert tables jika ada data
-    if (!empty($insertData)) {
-        try {
-            \DB::table('tables')->insert($insertData);
-            \Log::info('✅ Tables inserted successfully', ['count' => count($insertData)]);
-        } catch (\Exception $e) {
-            \Log::error('❌ Error inserting tables: ' . $e->getMessage(), [
-                'error_details' => $e->getTraceAsString()
-            ]);
-            throw $e;
-        }
-    } else {
-        \Log::warning('⚠️ No table data to insert');
-    }
-}
 
     private function generateSeatNumber($seatData)
     {
@@ -765,7 +823,15 @@ public function editLayout($layoutId)
                 'seats_count' => count($this->custom_seats),
                 'tables_count' => count($this->tables),
                 'layout_name' => $this->layout_name,
-                'event_id' => $this->getEventId()
+                'event_id' => $this->getEventId(),
+                'pricing' => [
+                    'vip_price' => $this->vip_price,
+                    'gold_price' => $this->gold_price,
+                    'regular_price' => $this->regular_price,
+                    'vip_table_price' => $this->vip_table_price,
+                    'gold_table_price' => $this->gold_table_price,
+                    'regular_table_price' => $this->regular_table_price
+                ]
             ],
             'debug_log' => $this->debug_info,
             'system_info' => [
@@ -819,9 +885,15 @@ public function editLayout($layoutId)
     {
         $this->editingLayoutId = null;
         $this->layout_name = '';
-        $this->vip_price = 300000;
+        
+        // UPDATED: Reset pricing untuk 3 kategori
+        $this->vip_price = 500000;
+        $this->gold_price = 300000;
         $this->regular_price = 150000;
-        $this->table_price = 500000;
+        $this->vip_table_price = 1000000;
+        $this->gold_table_price = 700000;
+        $this->regular_table_price = 500000;
+        
         $this->custom_seats = [];
         $this->tables = [];
         $this->background_image = null;
@@ -830,7 +902,7 @@ public function editLayout($layoutId)
         
         $this->debugLog('form_reset', [
             'reset_fields' => [
-                'layout_name', 'custom_seats', 'tables', 'prices'
+                'layout_name', 'custom_seats', 'tables', 'all_prices'
             ]
         ]);
     }
@@ -839,9 +911,13 @@ public function editLayout($layoutId)
     {
         $rules = [
             'layout_name' => 'required|string|max:255',
+            // UPDATED: Validation untuk 3 kategori pricing
             'vip_price' => 'required|numeric|min:0',
+            'gold_price' => 'required|numeric|min:0',
             'regular_price' => 'required|numeric|min:0',
-            'table_price' => 'required|numeric|min:0',
+            'vip_table_price' => 'required|numeric|min:0',
+            'gold_table_price' => 'required|numeric|min:0',
+            'regular_table_price' => 'required|numeric|min:0',
         ];
 
         if ($this->selling_mode === 'per_table') {
@@ -854,7 +930,8 @@ public function editLayout($layoutId)
             $rules['custom_seats.*.id'] = 'required';
             $rules['custom_seats.*.x'] = 'required|numeric|min:0';
             $rules['custom_seats.*.y'] = 'required|numeric|min:0';
-            $rules['custom_seats.*.type'] = 'required|in:Regular,VIP';
+            // UPDATED: Validation untuk 3 kategori seat type
+            $rules['custom_seats.*.type'] = 'required|in:Regular,Gold,VIP';
         }
 
         return $rules;
@@ -866,165 +943,181 @@ public function editLayout($layoutId)
             'layout_name.required' => 'Nama layout harus diisi.',
             'custom_seats.min' => 'Layout harus memiliki minimal satu kursi.',
             'tables.min' => 'Layout harus memiliki minimal satu meja.',
-            'custom_seats.*.type.in' => 'Tipe kursi harus Regular atau VIP.',
+            // UPDATED: Message untuk 3 kategori
+            'custom_seats.*.type.in' => 'Tipe kursi harus Regular, Gold, atau VIP.',
             'tables.*.capacity.required' => 'Kapasitas meja harus diisi.',
             'tables.*.capacity.min' => 'Kapasitas meja minimal 2 orang.',
             'tables.*.capacity.max' => 'Kapasitas meja maksimal 12 orang.',
+            // Pricing validation messages
+            'vip_price.required' => 'Harga VIP harus diisi.',
+            'gold_price.required' => 'Harga Gold harus diisi.',
+            'regular_price.required' => 'Harga Regular harus diisi.',
+            'vip_table_price.required' => 'Harga meja VIP harus diisi.',
+            'gold_table_price.required' => 'Harga meja Gold harus diisi.',
+            'regular_table_price.required' => 'Harga meja Regular harus diisi.',
         ];
     }
 
-
-/**
- * Transform seats data for edit mode
- * Ensures all required fields are present and properly formatted
- */
-private function transformSeatsForEdit($seats)
-{
-    if (!is_array($seats)) {
-        $this->debugLog('transform_seats_invalid_input', [
-            'input' => $seats,
-            'type' => gettype($seats)
-        ]);
-        return [];
-    }
-
-    $transformedSeats = [];
-    
-    foreach ($seats as $index => $seat) {
-        try {
-            // PERBAIKAN: Gunakan ukuran sebenarnya tanpa constraint tinggi
-            $actualWidth = (int) ($seat['width'] ?? 15);  // Default kecil
-            $actualHeight = (int) ($seat['height'] ?? 15); // Default kecil
-            
-            $transformedSeat = [
-                'id' => $seat['id'] ?? 'seat_' . ($index + 1),
-                'x' => (int) ($seat['x'] ?? 0),
-                'y' => (int) ($seat['y'] ?? 0),
-                'type' => $seat['type'] ?? 'Regular',
-                'row' => $seat['row'] ?? $this->generateSeatRowFromY($seat['y'] ?? 0),
-                'number' => $seat['number'] ?? ($index + 1),
-                'width' => $actualWidth,   // FIXED: Gunakan ukuran sebenarnya
-                'height' => $actualHeight, // FIXED: Gunakan ukuran sebenarnya
-                'table_id' => $seat['table_id'] ?? null
-            ];
-
-            // Validate seat type
-            if (!in_array($transformedSeat['type'], ['Regular', 'VIP'])) {
-                $transformedSeat['type'] = 'Regular';
-            }
-
-            // PERBAIKAN: Minimum dimensions yang realistis untuk ultra small
-            if ($transformedSeat['width'] < 12) $transformedSeat['width'] = 12;   // Ultra small minimum
-            if ($transformedSeat['height'] < 12) $transformedSeat['height'] = 12; // Ultra small minimum
-
-            $transformedSeats[] = $transformedSeat;
-            
-            $this->debugLog('seat_transformed', [
-                'index' => $index,
-                'original_width' => $seat['width'] ?? 'not_set',
-                'original_height' => $seat['height'] ?? 'not_set',
-                'transformed_width' => $transformedSeat['width'],
-                'transformed_height' => $transformedSeat['height']
+    /**
+     * Transform seats data for edit mode
+     * Ensures all required fields are present and properly formatted
+     */
+    private function transformSeatsForEdit($seats)
+    {
+        if (!is_array($seats)) {
+            $this->debugLog('transform_seats_invalid_input', [
+                'input' => $seats,
+                'type' => gettype($seats)
             ]);
-
-        } catch (Exception $e) {
-            $this->debugLog('seat_transform_error', [
-                'index' => $index,
-                'seat' => $seat,
-                'error' => $e->getMessage()
-            ]);
-            continue;
+            return [];
         }
-    }
 
-    $this->debugLog('seats_transformation_complete', [
-        'input_count' => count($seats),
-        'output_count' => count($transformedSeats),
-        'sample_sizes' => array_map(function($seat) {
-            return ['width' => $seat['width'], 'height' => $seat['height']];
-        }, array_slice($transformedSeats, 0, 3))
-    ]);
+        $transformedSeats = [];
+        
+        foreach ($seats as $index => $seat) {
+            try {
+                // Gunakan ukuran sebenarnya tanpa constraint tinggi
+                $actualWidth = (int) ($seat['width'] ?? 15);
+                $actualHeight = (int) ($seat['height'] ?? 15);
+                
+                // UPDATED: Ensure valid seat type for 3 categories
+                $seatType = $seat['type'] ?? 'Regular';
+                if (!in_array($seatType, ['Regular', 'Gold', 'VIP'])) {
+                    $seatType = 'Regular';
+                }
+                
+                $transformedSeat = [
+                    'id' => $seat['id'] ?? 'seat_' . ($index + 1),
+                    'x' => (int) ($seat['x'] ?? 0),
+                    'y' => (int) ($seat['y'] ?? 0),
+                    'type' => $seatType,
+                    'row' => $seat['row'] ?? $this->generateSeatRowFromY($seat['y'] ?? 0),
+                    'number' => $seat['number'] ?? ($index + 1),
+                    'width' => $actualWidth,
+                    'height' => $actualHeight,
+                    'table_id' => $seat['table_id'] ?? null
+                ];
 
-    return $transformedSeats;
-}
+                // Minimum dimensions yang realistis untuk ultra small
+                if ($transformedSeat['width'] < 12) $transformedSeat['width'] = 12;
+                if ($transformedSeat['height'] < 12) $transformedSeat['height'] = 12;
 
+                $transformedSeats[] = $transformedSeat;
+                
+                $this->debugLog('seat_transformed', [
+                    'index' => $index,
+                    'seat_type' => $seatType,
+                    'original_width' => $seat['width'] ?? 'not_set',
+                    'original_height' => $seat['height'] ?? 'not_set',
+                    'transformed_width' => $transformedSeat['width'],
+                    'transformed_height' => $transformedSeat['height']
+                ]);
 
-/**
- * Transform tables data for edit mode
- * Ensures all required fields are present and properly formatted
- */
-private function transformTablesForEdit($tables)
-{
-    if (!is_array($tables)) {
-        $this->debugLog('transform_tables_invalid_input', [
-            'input' => $tables,
-            'type' => gettype($tables)
-        ]);
-        return [];
-    }
-
-    $transformedTables = [];
-    
-    foreach ($tables as $index => $table) {
-        try {
-            // PERBAIKAN: Gunakan ukuran sebenarnya tanpa constraint tinggi
-            $actualWidth = (int) ($table['width'] ?? 30);  // Default kecil  
-            $actualHeight = (int) ($table['height'] ?? 30); // Default kecil
-            
-            $transformedTable = [
-                'id' => $table['id'] ?? 'table_' . ($index + 1),
-                'x' => (int) ($table['x'] ?? 0),
-                'y' => (int) ($table['y'] ?? 0),
-                'shape' => $table['shape'] ?? 'square',
-                'capacity' => (int) ($table['capacity'] ?? 4),
-                'number' => $table['number'] ?? 'T' . ($index + 1),
-                'width' => $actualWidth,   // FIXED: Gunakan ukuran sebenarnya
-                'height' => $actualHeight  // FIXED: Gunakan ukuran sebenarnya
-            ];
-
-            // Validate table shape
-            if (!in_array($transformedTable['shape'], ['square', 'circle', 'rectangle', 'diamond'])) {
-                $transformedTable['shape'] = 'square';
+            } catch (Exception $e) {
+                $this->debugLog('seat_transform_error', [
+                    'index' => $index,
+                    'seat' => $seat,
+                    'error' => $e->getMessage()
+                ]);
+                continue;
             }
-
-            // Validate capacity
-            if ($transformedTable['capacity'] < 2) $transformedTable['capacity'] = 2;
-            if ($transformedTable['capacity'] > 12) $transformedTable['capacity'] = 12;
-
-            // PERBAIKAN: Minimum dimensions yang realistis untuk ultra small
-            if ($transformedTable['width'] < 20) $transformedTable['width'] = 20;   // Ultra small minimum
-            if ($transformedTable['height'] < 20) $transformedTable['height'] = 20; // Ultra small minimum
-
-            $transformedTables[] = $transformedTable;
-            
-            $this->debugLog('table_transformed', [
-                'index' => $index,
-                'original_width' => $table['width'] ?? 'not_set',
-                'original_height' => $table['height'] ?? 'not_set',
-                'transformed_width' => $transformedTable['width'],
-                'transformed_height' => $transformedTable['height']
-            ]);
-
-        } catch (Exception $e) {
-            $this->debugLog('table_transform_error', [
-                'index' => $index,
-                'table' => $table,
-                'error' => $e->getMessage()
-            ]);
-            continue;
         }
+
+        $this->debugLog('seats_transformation_complete', [
+            'input_count' => count($seats),
+            'output_count' => count($transformedSeats),
+            'sample_sizes' => array_map(function($seat) {
+                return ['width' => $seat['width'], 'height' => $seat['height'], 'type' => $seat['type']];
+            }, array_slice($transformedSeats, 0, 3))
+        ]);
+
+        return $transformedSeats;
     }
 
-    $this->debugLog('tables_transformation_complete', [
-        'input_count' => count($tables),
-        'output_count' => count($transformedTables),
-        'sample_sizes' => array_map(function($table) {
-            return ['width' => $table['width'], 'height' => $table['height']];
-        }, array_slice($transformedTables, 0, 3))
-    ]);
+    /**
+     * Transform tables data for edit mode
+     * Ensures all required fields are present and properly formatted
+     */
+    private function transformTablesForEdit($tables)
+    {
+        if (!is_array($tables)) {
+            $this->debugLog('transform_tables_invalid_input', [
+                'input' => $tables,
+                'type' => gettype($tables)
+            ]);
+            return [];
+        }
 
-    return $transformedTables;
-}
+        $transformedTables = [];
+        
+        foreach ($tables as $index => $table) {
+            try {
+                // Gunakan ukuran sebenarnya tanpa constraint tinggi
+                $actualWidth = (int) ($table['width'] ?? 30);
+                $actualHeight = (int) ($table['height'] ?? 30);
+                
+                // UPDATED: Ensure valid table type for 3 categories
+                $tableType = $table['type'] ?? 'Regular';
+                if (!in_array($tableType, ['Regular', 'Gold', 'VIP'])) {
+                    $tableType = 'Regular';
+                }
+                
+                $transformedTable = [
+                    'id' => $table['id'] ?? 'table_' . ($index + 1),
+                    'x' => (int) ($table['x'] ?? 0),
+                    'y' => (int) ($table['y'] ?? 0),
+                    'shape' => $table['shape'] ?? 'square',
+                    'capacity' => (int) ($table['capacity'] ?? 4),
+                    'number' => $table['number'] ?? 'T' . ($index + 1),
+                    'type' => $tableType,
+                    'width' => $actualWidth,
+                    'height' => $actualHeight
+                ];
+
+                // Validate table shape
+                if (!in_array($transformedTable['shape'], ['square', 'circle', 'rectangle', 'diamond'])) {
+                    $transformedTable['shape'] = 'square';
+                }
+
+                // Validate capacity
+                if ($transformedTable['capacity'] < 2) $transformedTable['capacity'] = 2;
+                if ($transformedTable['capacity'] > 12) $transformedTable['capacity'] = 12;
+
+                // Minimum dimensions yang realistis untuk ultra small
+                if ($transformedTable['width'] < 20) $transformedTable['width'] = 20;
+                if ($transformedTable['height'] < 20) $transformedTable['height'] = 20;
+
+                $transformedTables[] = $transformedTable;
+                
+                $this->debugLog('table_transformed', [
+                    'index' => $index,
+                    'table_type' => $tableType,
+                    'original_width' => $table['width'] ?? 'not_set',
+                    'original_height' => $table['height'] ?? 'not_set',
+                    'transformed_width' => $transformedTable['width'],
+                    'transformed_height' => $transformedTable['height']
+                ]);
+
+            } catch (Exception $e) {
+                $this->debugLog('table_transform_error', [
+                    'index' => $index,
+                    'table' => $table,
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
+        }
+
+        $this->debugLog('tables_transformation_complete', [
+            'input_count' => count($tables),
+            'output_count' => count($transformedTables),
+            'sample_sizes' => array_map(function($table) {
+                return ['width' => $table['width'], 'height' => $table['height'], 'type' => $table['type']];
+            }, array_slice($transformedTables, 0, 3))
+        ]);
+
+        return $transformedTables;
+    }
 
     public function updatedBackgroundImage()
     {
@@ -1049,7 +1142,6 @@ private function transformTablesForEdit($tables)
         }
     }
 
-
     public function removeBackgroundImage()
     {
         $this->current_background_image = null;
@@ -1057,12 +1149,13 @@ private function transformTablesForEdit($tables)
         
         session()->flash('message', 'Background image removed.');
     }
-/**
- * Generate seat row letter from Y position
- */
-private function generateSeatRowFromY($y)
-{
-    $rowIndex = floor($y / 50);
-    return chr(65 + min($rowIndex, 25)); // A-Z
-}
+
+    /**
+     * Generate seat row letter from Y position
+     */
+    private function generateSeatRowFromY($y)
+    {
+        $rowIndex = floor($y / 50);
+        return chr(65 + min($rowIndex, 25)); // A-Z
+    }
 }
